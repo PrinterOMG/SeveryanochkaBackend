@@ -96,7 +96,7 @@ async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
     To complete this request you need a verified phone key
     """
     async with uow:
-        phone_key = await uow.phone_key.get_by_key(request.key)
+        phone_key = await uow.phone_key.get_by_key(request.phone_key)
         if phone_key is None or phone_key.expires_at < datetime.utcnow():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Key is expired or invalid')
 
