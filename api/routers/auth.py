@@ -15,7 +15,7 @@ from utils.security import create_access_token, get_password_hash, verify_passwo
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
 
-@router.get('/auth/phone_key/{key}', tags=['Phone key'])
+@router.get('/phone_key/{key}', tags=['Phone key'])
 async def get_phone_key(
         key: Annotated[str, Path(title='Phone key', description='Phone key')],
         uow: UOWDep
