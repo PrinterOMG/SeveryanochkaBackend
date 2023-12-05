@@ -89,7 +89,7 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
 
 
 @router.post('/register')
-async def register(request: RegisterRequest, uow: UOWDep):
+async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
     """
     Creates a new user.
 
