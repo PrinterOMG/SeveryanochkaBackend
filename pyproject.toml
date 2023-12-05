@@ -12,6 +12,8 @@ uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 sqlmodel = {extras = ["asyncio"], version = "^0.0.12"}
 asyncpg = "^0.29.0"
 alembic = "^1.12.1"
+passlib = "^1.7.4"
+python-jose = "^3.3.0"
 
 
 [build-system]

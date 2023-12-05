@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
 from database.base import async_session_maker
-from database.repositories.customer import CustomerRepositoryBase, CustomerRepository
+from database.repositories.phone_key import PhoneKeyRepositoryBase, PhoneKeyRepository
+from database.repositories.user import UserRepositoryBase, UserRepository
 
 
 class UnitOfWorkBase(ABC):
@@ -9,7 +10,8 @@ class UnitOfWorkBase(ABC):
     Unit of work.
     """
 
-    customers: CustomerRepositoryBase
+    users: UserRepositoryBase
+    phone_key: PhoneKeyRepositoryBase
 
     async def __aenter__(self):
         return self
@@ -42,12 +44,20 @@ class UnitOfWork(UnitOfWorkBase):
     def __aenter__(self):
         self._session = self._session_factory()
 
-        self.customers = CustomerRepository(self._session)
+        self.users = UserRepository(self._session)
+        self.phone_key = PhoneKeyRepository(self._session)
 
         return super().__aenter__()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self._session.expunge_all()
+        await super().__aexit__(exc_type, exc_val, exc_tb)
 
     async def commit(self):
         await self._session.commit()
 
     async def rollback(self):
         await self._session.rollback()
+
+    async def expunge(self, obj):
+        self._session.expunge(obj)
