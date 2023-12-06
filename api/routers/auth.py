@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from api.dependencies import UOWDep
 from api.schemas.auth import Token, RegisterRequest, RegisterResult, VerifyPhoneKey, CreatePhoneKey, PhoneKeyRead
+from api.schemas.other import ErrorMessage
 from database.models import PhoneKey
 from database.models.user import User
 from settings import settings
@@ -15,7 +16,15 @@ from utils.security import create_access_token, get_password_hash, verify_passwo
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
 
-@router.get('/phone_key/{key}', tags=['Phone key'])
+@router.get(
+    '/phone_key/{key}', tags=['Phone key'],
+    responses={
+        404: {
+            'description': 'Key not found',
+            'model': ErrorMessage
+        }
+    }
+)
 async def get_phone_key(
         key: Annotated[str, Path(title='Phone key', description='Phone key')],
         uow: UOWDep
@@ -28,7 +37,16 @@ async def get_phone_key(
     return phone_key
 
 
-@router.post('/phone_key/create', tags=['Phone key'])
+@router.post(
+    '/phone_key/create',
+    tags=['Phone key'],
+    responses={
+        429: {
+            'description': 'Too many create requests (limit is 3 per hour)',
+            'model': ErrorMessage
+        }
+    }
+)
 async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead:
     """
     Creates a key for requests with a phone number confirmation.
@@ -62,7 +80,16 @@ async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead
     return new_phone_key
 
 
-@router.post('/phone_key/verify', tags=['Phone key'])
+@router.post(
+    '/phone_key/verify',
+    tags=['Phone key'],
+    responses={
+        400: {
+            'description': 'Key is expired, invalid or already exists',
+            'model': ErrorMessage
+        }
+    }
+)
 async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead:
     """
     Verifies the phone key so that you can then use it to perform an operation like registration or password reset
@@ -88,7 +115,20 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
     return phone_key
 
 
-@router.post('/register')
+@router.post(
+    '/register',
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {
+            'description': 'Provided phone key is expired or invalid',
+            'model': ErrorMessage
+        },
+        409: {
+            'description': 'User with provided phone number already exists',
+            'model': ErrorMessage
+        }
+    }
+)
 async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
     """
     Creates a new user.
@@ -99,6 +139,11 @@ async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
         phone_key = await uow.phone_key.get_by_key(request.phone_key)
         if phone_key is None or phone_key.expires_at < datetime.utcnow():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Key is expired or invalid')
+
+        existed_user = await uow.users.get_by_phone(phone_key.phone)
+        if existed_user is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail='User with provided phone number already exists')
 
         hashed_password = get_password_hash(request.password)
         new_user = User(
@@ -122,7 +167,15 @@ async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
     )
 
 
-@router.post('/login')
+@router.post(
+    '/login',
+    responses={
+        401: {
+            'description': 'Incorrect credentials',
+            'model': ErrorMessage
+        }
+    }
+)
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], uow: UOWDep) -> Token:
     exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
