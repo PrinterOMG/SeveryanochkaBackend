@@ -21,3 +21,7 @@ class UserRead(UserBase):
 
 class UserUpdate(UserBase):
     pass
+
+
+class UserCheckResult(BaseModel):
+    success: bool
