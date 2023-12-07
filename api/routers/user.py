@@ -37,7 +37,7 @@ async def get_me(current_user: Annotated[User, Depends(get_current_user)]) -> Us
         }
     }
 )
-async def check_user(uow: UOWDep, phone: Annotated[str, Query(regex=r'^\+7\d{10}$')]):
+async def check_user(uow: UOWDep, phone: Annotated[str, Query(pattern=r'^\+7\d{10}$')]):
     """
     Checks whether the user exists using the provided phone number
     """

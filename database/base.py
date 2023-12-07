@@ -1,3 +1,6 @@
+from typing import Annotated
+
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 import sqlalchemy as sa
@@ -15,6 +18,10 @@ class Base(AsyncAttrs, DeclarativeBase):
         return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
 
 
-async def get_async_session():
-    async with async_session_maker() as session:
+def get_async_sessionmaker():
+    return async_sessionmaker
+
+
+async def get_async_session(session_maker: Annotated[async_sessionmaker, Depends(get_async_sessionmaker)]):
+    async with session_maker() as session:
         yield session
