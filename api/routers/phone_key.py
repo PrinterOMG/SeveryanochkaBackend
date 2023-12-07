@@ -35,6 +35,7 @@ async def get_phone_key(
 
 @router.post(
     '/create',
+    status_code=status.HTTP_201_CREATED,
     responses={
         429: {
             'description': 'Too many create requests (limit is 3 per hour)',
