@@ -1,7 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException
-from pydantic import BaseModel
 
 from api.dependencies import get_current_user, UOWDep
 from api.schemas.other import ErrorMessage
@@ -38,7 +37,7 @@ async def get_me(current_user: Annotated[User, Depends(get_current_user)]) -> Us
         }
     }
 )
-async def check_user(uow: UOWDep, phone: str = Annotated[str, Query(regex=r'^\+7\d{10}$')]):
+async def check_user(uow: UOWDep, phone: Annotated[str, Query(regex=r'^\+7\d{10}$')]):
     """
     Checks whether the user exists using the provided phone number
     """

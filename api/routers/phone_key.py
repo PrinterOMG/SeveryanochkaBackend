@@ -13,7 +13,7 @@ router = APIRouter(prefix='/phone_key', tags=['Phone verification key'])
 
 
 @router.get(
-    '/{phone_key}', tags=['Phone key'],
+    '/{phone_key}',
     responses={
         404: {
             'description': 'Key not found',
@@ -35,7 +35,6 @@ async def get_phone_key(
 
 @router.post(
     '/create',
-    tags=['Phone key'],
     responses={
         429: {
             'description': 'Too many create requests (limit is 3 per hour)',
@@ -78,7 +77,6 @@ async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead
 
 @router.post(
     '/verify',
-    tags=['Phone key'],
     responses={
         400: {
             'description': 'Key is expired, invalid or already exists',
