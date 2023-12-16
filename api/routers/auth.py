@@ -5,7 +5,7 @@ from fastapi import APIRouter, status, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from api.dependencies import UOWDep
-from api.schemas.auth import Token, RegisterRequest, RegisterResult
+from api.schemas.auth import Token, RegisterRequest, RegisterResult, ResetPasswordRequest
 from api.schemas.other import ErrorMessage
 from database.models.user import User
 from settings import settings
@@ -95,3 +95,33 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], uow:
     )
 
     return Token(access_token=access_token)
+
+
+@router.post(
+    '/reset_password',
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        401: {
+            'description': 'Phone key is expired or invalid',
+            'model': ErrorMessage
+        },
+        400: {
+            'description': 'User with provided phone does not exists',
+            'model': ErrorMessage
+        }
+    }
+)
+async def reset_password(request: ResetPasswordRequest, uow: UOWDep):
+    async with uow:
+        phone_key = await uow.phone_key.get_by_key(request.phone_key)
+        if phone_key is None or not phone_key.is_verified or phone_key.expires_at < datetime.utcnow():
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Key is expired or invalid')
+
+        user = await uow.users.get_by_phone(phone_key.phone)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail='User with provided phone does not exists')
+
+        user.hashed_password = get_password_hash(request.password)
+        await uow.users.update(user)
+        await uow.commit()

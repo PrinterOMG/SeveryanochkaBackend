@@ -22,3 +22,8 @@ class RegisterRequest(BaseModel):
 class RegisterResult(BaseModel):
     user: UserRead
     token: Token
+
+
+class ResetPasswordRequest(BaseModel):
+    phone_key: str = Field(title='Phone key', description='Must be valid verified phone key')
+    password: str

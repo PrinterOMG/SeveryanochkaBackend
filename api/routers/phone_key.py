@@ -106,5 +106,6 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
         phone_key.is_verified = True
         phone_key.expires_at = datetime.utcnow() + timedelta(minutes=10)
         phone_key = await uow.phone_key.update(phone_key)
+        await uow.commit()
 
     return phone_key
