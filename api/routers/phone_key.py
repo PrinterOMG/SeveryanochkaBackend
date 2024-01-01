@@ -82,6 +82,10 @@ async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead
         400: {
             'description': 'Key is expired, invalid or already exists',
             'model': ErrorMessage
+        },
+        401: {
+            'description': 'Confirmation code is invalid',
+            'model': ErrorMessage
         }
     }
 )
@@ -91,7 +95,7 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
 
     The verified key is one-time use and is valid for only 10 minutes. After use, the key is completely deleted
 
-    * (During development, any four-digit code will be valid and nothing is sent to the user's phone number)
+    * (During development, the code 0000 will always be correct and nothing is sent to the user's phone number)
     """
     async with uow:
         phone_key = await uow.phone_key.get_by_key(request.phone_key)
@@ -99,7 +103,7 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail='Key is expired, invalid or already verified')
 
-        is_correct_code = True  # Проверка кода через сторонний сервис
+        is_correct_code = request.code == '0000'  # Проверка кода через сторонний сервис
         if not is_correct_code:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Confirmation code is invalid')
 
