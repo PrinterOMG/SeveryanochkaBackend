@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Type, Optional, List
 
+from sqlalchemy import select, and_, Select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select, and_
-from sqlmodel.sql.expression import SelectOfScalar
 
 from database.base import Base
 
@@ -96,7 +95,7 @@ class GenericSqlRepository(GenericRepository[T], ABC):
         self._session = session
         self._model_cls = model_cls
 
-    def _construct_get_stmt(self, id: int) -> SelectOfScalar:
+    def _construct_get_stmt(self, id: int) -> Select:
         """
         Creates a SELECT query for retrieving a single record.
 
@@ -114,7 +113,7 @@ class GenericSqlRepository(GenericRepository[T], ABC):
         record = await self._session.execute(stmt)
         return record.scalar_one_or_none()
 
-    def _construct_list_stmt(self, offset, limit, **filters) -> SelectOfScalar:
+    def _construct_list_stmt(self, offset, limit, **filters) -> Select:
         """
         Creates a SELECT query for retrieving a multiple records.
 
