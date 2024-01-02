@@ -13,7 +13,7 @@ from main import app
 from settings import settings
 
 
-DATABASE_URL_TEST = settings.test_database_connection_str
+DATABASE_URL_TEST = settings.test_database_url
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
