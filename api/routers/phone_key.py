@@ -57,8 +57,6 @@ async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead
     During these 15 minutes you need to have time to verify the key so that you can carry out an operation with it
 
     The key will need to be verified with the `/auth/verify_phone_key` request
-
-    * (During development, any four-digit code will be valid and nothing is sent to the user's phone number)
     """
     async with uow:
         phone_keys = await uow.phone_key.get_last_hour_keys_by_phone(request.phone)
