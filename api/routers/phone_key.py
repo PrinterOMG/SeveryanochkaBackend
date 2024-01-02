@@ -40,6 +40,10 @@ async def get_phone_key(
         429: {
             'description': 'Too many create requests (limit is 3 per hour)',
             'model': ErrorMessage
+        },
+        503: {
+            'description': 'SMS service unavailable',
+            'model': ErrorMessage
         }
     }
 )
