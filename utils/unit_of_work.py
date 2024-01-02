@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import Annotated
 
-from database.base import async_session_maker
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import async_sessionmaker
+
+from database.base import get_async_session_factory
 from database.repositories.phone_key import PhoneKeyRepositoryBase, PhoneKeyRepository
 from database.repositories.user import UserRepositoryBase, UserRepository
 
@@ -35,11 +39,11 @@ class UnitOfWorkBase(ABC):
 
 
 class UnitOfWork(UnitOfWorkBase):
-    def __init__(self) -> None:
+    def __init__(self, session_factory: Annotated[async_sessionmaker, Depends(get_async_session_factory)]) -> None:
         """
         Creates a new uow instance.
         """
-        self._session_factory = async_session_maker
+        self._session_factory = session_factory
 
     def __aenter__(self):
         self._session = self._session_factory()

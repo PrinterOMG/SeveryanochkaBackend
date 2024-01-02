@@ -15,6 +15,5 @@ class Base(AsyncAttrs, DeclarativeBase):
         return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
 
 
-async def get_async_session():
-    async with async_session_maker() as session:
-        yield session
+async def get_async_session_factory() -> async_sessionmaker:
+    return async_session_maker
