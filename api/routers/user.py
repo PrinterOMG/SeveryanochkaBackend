@@ -77,7 +77,7 @@ async def update_me(
 
     * For phone update phone key is required
     """
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
 
     if not update_data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='At least one field is required')

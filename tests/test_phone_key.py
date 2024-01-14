@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 
 import pytest
-from httpx import AsyncClient
 from sqlalchemy import select
 
-from database.models import User, PhoneKey
+from database.models import PhoneKey
 from tests.conftest import async_session_maker, client
 
 
@@ -172,4 +171,3 @@ async def test_get_invalid_phone_key():
     response = client.get('/api/phone_key/invalid_key')
 
     assert response.status_code == 404
-

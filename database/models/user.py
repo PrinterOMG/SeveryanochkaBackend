@@ -13,4 +13,4 @@ class User(Base):
     phone: Mapped[str] = mapped_column(nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
     hashed_password: Mapped[str] = mapped_column(nullable=False)
-    is_superuser: Mapped[bool] = mapped_column(default=False)
+    is_superuser: Mapped[bool] = mapped_column(default=False, )
