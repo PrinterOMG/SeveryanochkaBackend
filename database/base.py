@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 from settings import settings
 
-engine = create_async_engine(settings.database_url)
+engine = create_async_engine(settings.database_url.unicode_string())
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 

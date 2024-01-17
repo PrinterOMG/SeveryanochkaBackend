@@ -4,8 +4,10 @@ pythonpath = [
 ]
 asyncio_mode="auto"
 filterwarnings = [
-    # note the use of single quote below to denote "raw" strings in TOML
     'ignore::DeprecationWarning',
+    # This warning occurs when testing endpoints that delete something,
+    # since after the test runs in the fixture, deletion also occurs
+    'ignore::sqlalchemy.exc.SAWarning',
 ]
 
 [tool.poetry]
@@ -28,6 +30,7 @@ python-multipart = "^0.0.6"
 pytest = "^7.4.4"
 httpx = "^0.26.0"
 pytest-asyncio = "^0.23.3"
+pydantic-settings = "^2.1.0"
 
 
 [tool.poetry.group.dev.dependencies]

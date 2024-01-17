@@ -1,5 +1,4 @@
-from datetime import datetime
-from typing import Annotated
+from datetime import datetime, date
 
 from pydantic import BaseModel, Field
 
@@ -7,22 +6,23 @@ from pydantic import BaseModel, Field
 class UserBase(BaseModel):
     first_name: str | None
     last_name: str | None
-    phone: str = Field(regex=r'^\+7\d{10}$')
+    birthday: date | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserRead(UserBase):
     id: int
     created_at: datetime
     is_superuser: bool
+    phone: str = Field(pattern=r'^\+7\d{10}$')
 
 
 class UserUpdate(UserBase):
-    first_name: str | None
-    last_name: str | None
-    phone: Annotated[str | None, Field(regex=r'^\+7\d{10}$', description='For phone update phone key is required')]
+    first_name: str | None = None
+    last_name: str | None = None
+    birthday: date | None = None
 
 
 class UserCheckResult(BaseModel):

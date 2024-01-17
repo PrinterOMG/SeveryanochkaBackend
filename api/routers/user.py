@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException
@@ -60,14 +59,13 @@ async def check_user(uow: UOWDep, phone: Annotated[str, Query(pattern=r'^\+7\d{1
             'model': ErrorMessage
         },
         401: {
-            'description': 'Something wrong with access... Check detail',
+            'description': 'Bad token',
             'model': ErrorMessage
         }
     },
 )
 async def update_me(
         *,
-        phone_key: Annotated[str | None, Query(description='Required for update phone')] = None,
         current_user: Annotated[User, Depends(get_current_user)],
         uow: UOWDep,
         user_update: UserUpdate
@@ -75,32 +73,21 @@ async def update_me(
     """
     Updates the current user
 
-    * For phone update phone key is required
+    * Birthday can be changed just once
     """
     update_data = user_update.model_dump(exclude_unset=True)
 
     if not update_data:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='At least one field is required')
 
-    if update_data.get('phone'):
-        if phone_key is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Phone key is required for phone update')
-
-        async with uow:
-            db_phone_key = await uow.phone_key.get_by_key(phone_key)
-
-        if db_phone_key is None or db_phone_key.expires_at < datetime.utcnow() or not db_phone_key.is_verified:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Phone key is invalid, expired or not verified')
+    if update_data.get('birthday') and current_user.birthday:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Birthday can be changed just once')
 
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
     async with uow:
         current_user = await uow.users.update(current_user)
-        if phone_key is not None and db_phone_key is not None:
-            await uow.phone_key.delete(db_phone_key.id)
         await uow.commit()
 
     return current_user
