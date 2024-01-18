@@ -13,7 +13,7 @@ from main import app
 from settings import settings
 from utils.security import create_access_token
 
-DATABASE_URL_TEST = settings.test_database_url.unicode_string()
+DATABASE_URL_TEST = settings.test_database_url
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
