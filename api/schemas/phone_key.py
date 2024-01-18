@@ -26,9 +26,14 @@ class CreatePhoneKey(BaseModel):
 class PhoneKeyRead(BaseModel):
     key: str
     phone: str = Field(pattern=r'^\+7\d{10}$')
+
     created_at: datetime
     expires_at: datetime
+    verified_at: datetime | None
+    used_at: datetime | None
+
     is_verified: bool
+    is_used: bool
 
     class Config:
         from_attributes = True

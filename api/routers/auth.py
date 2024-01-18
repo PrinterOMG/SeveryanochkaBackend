@@ -19,7 +19,7 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
     status_code=status.HTTP_201_CREATED,
     responses={
         400: {
-            'description': 'Provided phone key is expired or invalid',
+            'description': 'Provided phone key is expired, invalid or used',
             'model': ErrorMessage
         },
         409: {
@@ -36,8 +36,8 @@ async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
     """
     async with uow:
         phone_key = await uow.phone_key.get_by_key(request.phone_key)
-        if phone_key is None or phone_key.expires_at < datetime.utcnow():
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Key is expired or invalid')
+        if phone_key is None or (not phone_key.is_active):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Key is expired, invalid or used')
 
         existed_user = await uow.users.get_by_phone(phone_key.phone)
         if existed_user is not None:
@@ -51,7 +51,9 @@ async def register(request: RegisterRequest, uow: UOWDep) -> RegisterResult:
         )
         new_user = await uow.users.add(new_user)
 
-        await uow.phone_key.delete(phone_key.id)
+        phone_key.is_used = True
+        phone_key.used_at = datetime.utcnow()
+        await uow.phone_key.update(phone_key)
 
         await uow.commit()
 
@@ -102,7 +104,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], uow:
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         401: {
-            'description': 'Phone key is expired or invalid',
+            'description': 'Phone key is expired, invalid or used',
             'model': ErrorMessage
         },
         400: {
@@ -114,8 +116,8 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], uow:
 async def reset_password(request: ResetPasswordRequest, uow: UOWDep):
     async with uow:
         phone_key = await uow.phone_key.get_by_key(request.phone_key)
-        if phone_key is None or not phone_key.is_verified or phone_key.expires_at < datetime.utcnow():
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Key is expired or invalid')
+        if phone_key is None or (not phone_key.is_active):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Key is expired, invalid or used')
 
         user = await uow.users.get_by_phone(phone_key.phone)
         if user is None:
@@ -124,4 +126,9 @@ async def reset_password(request: ResetPasswordRequest, uow: UOWDep):
 
         user.hashed_password = get_password_hash(request.password)
         await uow.users.update(user)
+
+        phone_key.is_used = True
+        phone_key.used_at = datetime.utcnow()
+        await uow.phone_key.update(phone_key)
+
         await uow.commit()

@@ -95,7 +95,7 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
     """
     Verifies the phone key so that you can then use it to perform an operation like registration or password reset
 
-    The verified key is one-time use and is valid for only 10 minutes. After use, the key is completely deleted
+    The verified key is one-time use and is valid for only 10 minutes.
 
     * (During development, the code 0000 will always be correct and nothing is sent to the user's phone number)
     """
@@ -110,6 +110,7 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Confirmation code is invalid')
 
         phone_key.is_verified = True
+        phone_key.verified_at = datetime.utcnow()
         phone_key.expires_at = datetime.utcnow() + timedelta(minutes=10)
         phone_key = await uow.phone_key.update(phone_key)
         await uow.commit()

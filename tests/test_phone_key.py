@@ -61,6 +61,8 @@ async def test_create_success():
         db_phone_key = record.scalar_one()
 
     assert db_phone_key is not None
+    assert db_phone_key.is_used is False
+    assert db_phone_key.is_verified is False
 
 
 @pytest.mark.parametrize(
@@ -86,7 +88,7 @@ async def test_verify_success(prepared_phone_key: PhoneKey):
 
     async with async_session_maker() as session:
         db_phone_key = await session.get(PhoneKey, prepared_phone_key.id)
-        assert db_phone_key.is_verified is True
+    assert db_phone_key.is_verified is True
 
 
 @pytest.mark.parametrize(
@@ -165,6 +167,7 @@ async def test_get_success(prepared_phone_key: PhoneKey):
     assert result['key'] == prepared_phone_key.key
     assert result['phone'] == prepared_phone_key.phone
     assert result['is_verified'] == prepared_phone_key.is_verified
+    assert result['is_used'] == prepared_phone_key.is_used
 
 
 async def test_get_invalid_phone_key():

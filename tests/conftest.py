@@ -102,6 +102,7 @@ async def auth_headers(prepared_user: User, expires_minutes: int) -> dict:
 
     return headers
 
+
 @pytest.fixture(scope='function')
 async def authenticated_client(auth_headers: dict) -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(app=app, base_url='http://test', headers=auth_headers) as ac:

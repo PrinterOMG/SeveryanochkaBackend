@@ -55,7 +55,7 @@ async def check_user(uow: UOWDep, phone: Annotated[str, Query(pattern=r'^\+7\d{1
     '/me',
     responses={
         400: {
-            'description': 'At least one field is required',
+            'description': 'Something bad... Check detail',
             'model': ErrorMessage
         },
         401: {

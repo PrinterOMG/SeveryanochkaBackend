@@ -104,7 +104,7 @@ async def test_user_patch_bad_birthday_change(prepared_user: User, authenticated
     ids=['Base user']
 )
 async def test_user_patch_bad_json(prepared_user: User, authenticated_client: AsyncClient):
-    data = { }
+    data = {}
 
     response = await authenticated_client.patch('/api/user/me', json=jsonable_encoder(data))
 
