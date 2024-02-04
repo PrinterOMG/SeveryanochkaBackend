@@ -28,7 +28,7 @@ async def refresh_sub_categories(uow, category: Category, max_depth: int, cur_de
 @router.get('/')
 async def get_categories(
         uow: UOWDep,
-        depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories. Default is 1')] = 1
+        depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
 ) -> list[CategoryRead]:
     """
     Return all root categories with their `child`.
@@ -51,7 +51,7 @@ async def get_categories(
 async def get_category(
         uow: UOWDep,
         category_id: int,
-        depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories. Default is 1')] = 1
+        depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
 ) -> CategoryRead:
     """
     Return category with provided `id` with its `child`.
