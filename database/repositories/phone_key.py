@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models.phone_key import PhoneKey
+from database.models import PhoneKey
 from database.repositories.base import GenericRepository, GenericSqlRepository
 
 

@@ -6,7 +6,7 @@ from database.base import Base
 
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = 'user'
 
     first_name: Mapped[str] = mapped_column(nullable=True)
     last_name: Mapped[str] = mapped_column(nullable=True)
@@ -16,4 +16,4 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(nullable=False, default=datetime.utcnow)
-    is_superuser: Mapped[bool] = mapped_column(default=False, )
+    is_superuser: Mapped[bool] = mapped_column(default=False, nullable=False)
