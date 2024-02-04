@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 
 from api.schemas.auth import TokenData
+from database.models import User
 from settings import settings
 from utils.unit_of_work import UnitOfWorkBase, UnitOfWork
 
@@ -37,3 +38,11 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], uow: U
         raise credentials_exception
 
     return user
+
+
+def current_user_id_admin(current_user: Annotated[User, Depends(get_current_user)]):
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='You do not have permission to perform this')
+
+    return True
