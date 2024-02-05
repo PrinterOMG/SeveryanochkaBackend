@@ -5,6 +5,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from database.base import get_async_session_factory
+from database.repositories.brand import BrandRepositoryBase, BrandRepository
 from database.repositories.category import CategoryRepository, CategoryRepositoryBase
 from database.repositories.phone_key import PhoneKeyRepositoryBase, PhoneKeyRepository
 from database.repositories.user import UserRepositoryBase, UserRepository
@@ -18,6 +19,7 @@ class UnitOfWorkBase(ABC):
     users: UserRepositoryBase
     phone_key: PhoneKeyRepositoryBase
     category: CategoryRepositoryBase
+    brand: BrandRepositoryBase
 
     async def __aenter__(self):
         return self
@@ -53,6 +55,7 @@ class UnitOfWork(UnitOfWorkBase):
         self.users = UserRepository(self._session)
         self.phone_key = PhoneKeyRepository(self._session)
         self.category = CategoryRepository(self._session)
+        self.brand = BrandRepository(self._session)
 
         return super().__aenter__()
 

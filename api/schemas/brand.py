@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field
 
 
 class BrandBase(BaseModel):
@@ -7,3 +9,11 @@ class BrandBase(BaseModel):
 
 class BrandRead(BrandBase):
     id: int
+
+
+class BrandCreate(BrandBase):
+    name: Annotated[str, Field(min_length=3)]
+
+
+class BrandUpdate(BrandBase):
+    name: Annotated[str, Field(min_length=3)]
