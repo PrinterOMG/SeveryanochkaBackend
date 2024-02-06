@@ -1,13 +1,16 @@
 import asyncio
+import gettext
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+import pycountry
+from sqlalchemy import pool, insert, select, func
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
 from database.base import Base
+from database.models import Country
 from settings import settings
 
 # this is the Alembic Config object, which provides
@@ -77,6 +80,22 @@ async def run_async_migrations() -> None:
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
+
+    async with connectable.connect() as connection:
+        stmt = select(func.count()).select_from(Country)
+        result = await connection.scalar(stmt)
+
+    if result == 0:
+        russian = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=['ru'])
+
+        countries = list()
+        for country in pycountry.countries:
+            countries.append({'name': russian.gettext(country.name), 'code': country.alpha_2})
+
+        async with connectable.connect() as connection:
+            stmt = insert(Country).values(countries)
+            await connection.execute(stmt)
+            await connection.commit()
 
     await connectable.dispose()
 

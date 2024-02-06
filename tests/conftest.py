@@ -1,15 +1,17 @@
+import gettext
 from datetime import datetime, timedelta, date
 from typing import AsyncGenerator
 
+import pycountry
 import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
-from sqlalchemy import text
+from sqlalchemy import text, insert
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import NullPool
 
 from database.base import Base, get_async_session_factory
-from database.models import PhoneKey, User, Category, Brand
+from database.models import PhoneKey, User, Category, Brand, Country
 from main import app
 from settings import settings
 from utils.security import create_access_token
@@ -32,7 +34,18 @@ app.dependency_overrides[get_async_session_factory] = override_get_session_facto
 async def prepare_database():
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        russian = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=['ru'])
+
+        countries = list()
+        for country in pycountry.countries:
+            countries.append({'name': russian.gettext(country.name), 'code': country.alpha_2})
+
+        stmt = insert(Country).values(countries)
+        await conn.execute(stmt)
+
     yield
+
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 

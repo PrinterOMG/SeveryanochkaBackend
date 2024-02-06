@@ -14,15 +14,6 @@ class ManufacturerRead(ManufacturerBase):
     id: int
 
 
-class CountryBase(BaseModel):
-    code: str
-    name: str
-
-
-class CountryRead(CountryBase):
-    id: int
-
-
 class ProductBase(BaseModel):
     name: str
     description: str
