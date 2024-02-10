@@ -8,6 +8,7 @@ from database.base import get_async_session_factory
 from database.repositories.brand import BrandRepositoryBase, BrandRepository
 from database.repositories.category import CategoryRepository, CategoryRepositoryBase
 from database.repositories.country import CountryRepository, CountryRepositoryBase
+from database.repositories.manufacturer import ManufacturerRepositoryBase, ManufacturerRepository
 from database.repositories.phone_key import PhoneKeyRepositoryBase, PhoneKeyRepository
 from database.repositories.user import UserRepositoryBase, UserRepository
 
@@ -22,6 +23,7 @@ class UnitOfWorkBase(ABC):
     category: CategoryRepositoryBase
     brand: BrandRepositoryBase
     country: CountryRepositoryBase
+    manufacturer: ManufacturerRepositoryBase
 
     async def __aenter__(self):
         return self
@@ -59,6 +61,7 @@ class UnitOfWork(UnitOfWorkBase):
         self.category = CategoryRepository(self._session)
         self.brand = BrandRepository(self._session)
         self.country = CountryRepository(self._session)
+        self.manufacturer = ManufacturerRepository(self._session)
 
         return super().__aenter__()
 

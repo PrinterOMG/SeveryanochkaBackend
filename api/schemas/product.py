@@ -4,14 +4,7 @@ from pydantic import BaseModel
 
 from api.schemas.brand import BrandRead
 from api.schemas.category import CategoryRead
-
-
-class ManufacturerBase(BaseModel):
-    name: str
-
-
-class ManufacturerRead(ManufacturerBase):
-    id: int
+from api.schemas.manufacturer import ManufacturerRead
 
 
 class ProductBase(BaseModel):
