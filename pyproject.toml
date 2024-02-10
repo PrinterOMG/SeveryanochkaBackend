@@ -11,11 +11,10 @@ filterwarnings = [
 ]
 
 [tool.poetry]
-name = "fastapiproject"
+name = "SeveryanochkaBackend"
 version = "0.1.0"
 description = ""
 authors = ["PrinterOMG <PrinterOMG@ya.ru>"]
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "3.11.*"
