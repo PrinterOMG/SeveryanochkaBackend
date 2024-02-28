@@ -31,6 +31,8 @@ httpx = "^0.26.0"
 pytest-asyncio = "^0.23.3"
 pydantic-settings = "^2.1.0"
 pycountry = "^23.12.11"
+sqlalchemy = {version = "^2.0.25", extras = ["asyncio"]}
+pytest-docker = "^3.1.1"
 
 
 [tool.poetry.group.dev.dependencies]

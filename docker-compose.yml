@@ -1,0 +1,26 @@
+version: '3'
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:16
+    restart: always
+    networks:
+      - backend
+    expose:
+      - 5432
+    env_file: .env
+
+  fastapi:
+    build: .
+    depends_on:
+       - postgres
+    restart: always
+    ports:
+      - "8080:8000"
+    env_file: .env
+    networks:
+      - backend

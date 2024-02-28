@@ -2,6 +2,7 @@ import gettext
 from datetime import datetime, timedelta, date
 from typing import AsyncGenerator
 
+import asyncpg
 import pycountry
 import pytest
 from fastapi.testclient import TestClient
@@ -16,7 +17,10 @@ from main import app
 from settings import settings
 from utils.security import create_access_token
 
-DATABASE_URL_TEST = settings.test_database_url
+
+# pytest_plugins = ['pytest-docker']
+
+DATABASE_URL_TEST = settings.database_url
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
@@ -30,8 +34,28 @@ def override_get_session_factory():
 app.dependency_overrides[get_async_session_factory] = override_get_session_factory
 
 
+async def postgres_responsive(database_url: str) -> bool:
+    try:
+        conn = await asyncpg.connect(dsn=database_url)
+    except (ConnectionError, asyncpg.CannotConnectNowError):
+        return False
+
+    try:
+        return (await conn.fetchrow('SELECT 1'))[0] == 1
+    finally:
+        await conn.close()
+
+
+@pytest.fixture(scope='session')
+def postgres_service(docker_services, docker_compose_file):
+    print(docker_compose_file)
+    docker_services.wait_until_responsive(
+        timeout=30.0, pause=0.1, check=lambda: postgres_responsive(settings.database_url)
+    )
+
+
 @pytest.fixture(autouse=True, scope='session')
-async def prepare_database():
+async def prepare_database(postgres_service):
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
