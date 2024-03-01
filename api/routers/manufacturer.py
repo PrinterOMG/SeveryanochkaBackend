@@ -36,7 +36,8 @@ async def get_manufacturer(uow: UOWDep, manufacturer_id: int) -> ManufacturerRea
 @router.post(
     '',
     dependencies=[Depends(current_user_id_admin)],
-    response_model=ManufacturerRead
+    response_model=ManufacturerRead,
+    status_code=201
 )
 async def create_manufacturer(uow: UOWDep, new_manufacturer: ManufacturerCreate) -> Manufacturer:
     async with uow:

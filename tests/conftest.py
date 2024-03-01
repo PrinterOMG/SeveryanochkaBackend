@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import NullPool
 
 from database.base import Base, get_async_session_factory
-from database.models import PhoneKey, User, Category, Brand, Country
+from database.models import PhoneKey, User, Category, Brand, Country, Manufacturer
 from main import app
 from settings import settings
 from utils.security import create_access_token
@@ -121,6 +121,21 @@ async def prepared_brands():
 
     async with async_session_maker.begin() as session:
         await session.execute(text(f'TRUNCATE TABLE {Brand.__tablename__} CASCADE;'))
+
+
+@pytest.fixture(scope='function')
+async def prepared_manufacturers():
+    manufacturers = list()
+    for i in range(1, 31):
+        manufacturers.append(Manufacturer(name=f'Manufacturer {i}'))
+
+    async with async_session_maker.begin() as session:
+        session.add_all(manufacturers)
+
+    yield manufacturers
+
+    async with async_session_maker.begin() as session:
+        await session.execute(text(f'TRUNCATE TABLE {Manufacturer.__tablename__} CASCADE;'))
 
 
 @pytest.fixture(scope='function')
