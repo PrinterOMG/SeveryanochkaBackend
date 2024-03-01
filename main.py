@@ -1,10 +1,22 @@
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from api.routers import router as main_router
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Path('static/users/').mkdir(parents=True, exist_ok=True)
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+app.mount('/static', StaticFiles(directory='static'))
 
 origins = [
     'http://localhost',

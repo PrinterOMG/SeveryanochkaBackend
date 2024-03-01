@@ -11,6 +11,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(nullable=True)
     last_name: Mapped[str] = mapped_column(nullable=True)
     birthday: Mapped[date] = mapped_column(nullable=True)
+    avatar_url: Mapped[str] = mapped_column(nullable=True)
 
     phone: Mapped[str] = mapped_column(nullable=False, unique=True)
     hashed_password: Mapped[str] = mapped_column(nullable=False)

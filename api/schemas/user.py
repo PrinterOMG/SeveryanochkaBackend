@@ -15,6 +15,7 @@ class UserBase(BaseModel):
 class UserRead(UserBase):
     id: int
     created_at: datetime
+    avatar_url: str | None
     is_superuser: bool
     phone: str = Field(pattern=r'^\+7\d{10}$')
 

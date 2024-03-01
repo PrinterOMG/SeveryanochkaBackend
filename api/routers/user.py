@@ -1,6 +1,10 @@
+import uuid
+from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from PIL import Image
+from fastapi import APIRouter, Depends, Query, status, HTTPException, UploadFile
+import aiofiles
 
 from api.dependencies import get_current_user, UOWDep
 from api.schemas.other import ErrorMessage
@@ -91,6 +95,31 @@ async def update_me(
         await uow.commit()
 
     return current_user
+
+
+@router.post('/me/set_avatar')
+async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], avatar: UploadFile):
+    if avatar.size > 10 * 1024 * 1024:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Image size must be no more than 10 MB')
+
+    if avatar.content_type not in ('image/jpeg', 'image/png'):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='File must be an image file (.png or .jpeg)')
+
+    image = Image.open(await avatar.read())
+    width, height = image.size
+    if width >= 400 or height >= 400:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Image resolution should be no more than 400x400')
+
+    filename = 'avatar-' + str(uuid.uuid4()).replace('-', '')[:4] + avatar.filename[avatar.filename.rfind('.'):]
+    path_to_avatar = Path(f'static/users/{filename}')
+
+    async with aiofiles.open(path_to_avatar, mode='wb') as file:
+        await file.write(image.tobytes())
+
+    current_user.avatar_url = path_to_avatar
 
 
 @router.delete(
