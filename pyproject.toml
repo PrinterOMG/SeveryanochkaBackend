@@ -26,17 +26,16 @@ passlib = "^1.7.4"
 python-jose = "^3.3.0"
 gunicorn = "^21.2.0"
 python-multipart = "^0.0.7"
-pytest = "^7.4.4"
 httpx = "^0.26.0"
-pytest-asyncio = "^0.23.3"
 pydantic-settings = "^2.1.0"
 pycountry = "^23.12.11"
 sqlalchemy = {version = "^2.0.25", extras = ["asyncio"]}
-pytest-docker = "^3.1.1"
-
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "^7.0.0"
+pytest = "^8.0.2"
+pytest-docker = "^3.1.1"
+pytest-asyncio = "^0.23.3"
 
 [build-system]
 requires = ["poetry-core"]
