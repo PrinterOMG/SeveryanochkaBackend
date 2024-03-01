@@ -98,8 +98,27 @@ async def update_me(
     return current_user
 
 
-@router.post('/me/set_avatar', response_model=UserRead)
+@router.post(
+    '/me/avatar',
+    response_model=UserRead,
+    responses={
+        400: {
+            'description': 'Something bad with avatar file. Check detail',
+            'model': ErrorMessage
+        }
+    }
+)
 async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], avatar: UploadFile, uow: UOWDep):
+    """
+    Upload a new avatar to current user
+
+    Avatar requirements:
+    * File must be an image file .png or .jpeg
+    * Image size must be no more than 10 MB
+    * Image resolution should be no more than 400x400
+
+    After adding a new avatar, the old one is completely deleted
+    """
     if avatar.size > 10 * 1024 * 1024:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='Image size must be no more than 10 MB')
@@ -122,11 +141,8 @@ async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], a
     filename = f'avatar-{random_str}.{extension}'
     path_to_avatar = output_directory / filename
 
-    buffer = io.BytesIO()
-    image.save(buffer, format=extension)
-
     async with aiofiles.open(path_to_avatar, mode='wb') as file:
-        await file.write(buffer.getbuffer())
+        await file.write(await avatar.read())
 
     old_avatar = current_user.avatar_url
     current_user.avatar_url = str(path_to_avatar)
@@ -135,9 +151,23 @@ async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], a
         await uow.users.update(current_user)
         await uow.commit()
 
-    Path(old_avatar).unlink(missing_ok=True)
+    if old_avatar is not None:
+        Path(old_avatar).unlink(missing_ok=True)
 
     return current_user
+
+
+@router.delete('/me/avatar', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_avatar(current_user: Annotated[User, Depends(get_current_user)], uow: UOWDep):
+    if current_user.avatar_url is None:
+        return
+
+    Path(current_user.avatar_url).unlink(missing_ok=True)
+    current_user.avatar_url = None
+
+    async with uow:
+        await uow.users.update(current_user)
+        await uow.commit()
 
 
 @router.delete(
