@@ -17,6 +17,8 @@ services:
     depends_on:
        - postgres
     restart: unless-stopped
+    volumes:
+      - ./static:/app/static
     env_file: .env
     networks:
       - backend

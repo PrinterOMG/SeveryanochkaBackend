@@ -7,6 +7,7 @@ from typing import AsyncGenerator, Callable, Awaitable, Any
 import asyncpg
 import pycountry
 import pytest
+from PIL import Image
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from sqlalchemy import text, insert
@@ -196,6 +197,14 @@ async def prepared_user(
 
     async with async_session_maker.begin() as session:
         await session.delete(new_user)
+
+
+@pytest.fixture(scope='function')
+def prepared_image(size) -> Image:
+    new_image = Image.new('RGBA', size, (255, 255, 255, 0))
+    new_image.save('test.png')
+
+    return new_image
 
 
 @pytest.fixture(scope='function')

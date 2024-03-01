@@ -16,7 +16,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount('/static', StaticFiles(directory='static'))
+
+app.mount('/static', StaticFiles(directory='static', check_dir=False), name='static')
 
 origins = [
     'http://localhost',

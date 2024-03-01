@@ -1,3 +1,4 @@
+import io
 import uuid
 from pathlib import Path
 from typing import Annotated
@@ -97,8 +98,8 @@ async def update_me(
     return current_user
 
 
-@router.post('/me/set_avatar')
-async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], avatar: UploadFile):
+@router.post('/me/set_avatar', response_model=UserRead)
+async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], avatar: UploadFile, uow: UOWDep):
     if avatar.size > 10 * 1024 * 1024:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='Image size must be no more than 10 MB')
@@ -107,19 +108,36 @@ async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], a
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='File must be an image file (.png or .jpeg)')
 
-    image = Image.open(await avatar.read())
+    image = Image.open(io.BytesIO(await avatar.read()))
     width, height = image.size
     if width >= 400 or height >= 400:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='Image resolution should be no more than 400x400')
 
-    filename = 'avatar-' + str(uuid.uuid4()).replace('-', '')[:4] + avatar.filename[avatar.filename.rfind('.'):]
-    path_to_avatar = Path(f'static/users/{filename}')
+    output_directory = Path(f'static/users/{current_user.id}')
+    output_directory.mkdir(exist_ok=True)
+
+    extension = avatar.filename.split('.')[-1]
+    random_str = str(uuid.uuid4()).replace('-', '')[:4]
+    filename = f'avatar-{random_str}.{extension}'
+    path_to_avatar = output_directory / filename
+
+    buffer = io.BytesIO()
+    image.save(buffer, format=extension)
 
     async with aiofiles.open(path_to_avatar, mode='wb') as file:
-        await file.write(image.tobytes())
+        await file.write(buffer.getbuffer())
 
-    current_user.avatar_url = path_to_avatar
+    old_avatar = current_user.avatar_url
+    current_user.avatar_url = str(path_to_avatar)
+
+    async with uow:
+        await uow.users.update(current_user)
+        await uow.commit()
+
+    Path(old_avatar).unlink(missing_ok=True)
+
+    return current_user
 
 
 @router.delete(
