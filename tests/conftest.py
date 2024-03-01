@@ -1,6 +1,8 @@
+import asyncio
 import gettext
+import timeit
 from datetime import datetime, timedelta, date
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable, Awaitable, Any
 
 import asyncpg
 import pycountry
@@ -18,9 +20,7 @@ from settings import settings
 from utils.security import create_access_token
 
 
-# pytest_plugins = ['pytest-docker']
-
-DATABASE_URL_TEST = settings.database_url
+DATABASE_URL_TEST = 'postgresql+asyncpg://test:secret-password@localhost:5432/test'
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
@@ -34,9 +34,15 @@ def override_get_session_factory():
 app.dependency_overrides[get_async_session_factory] = override_get_session_factory
 
 
-async def postgres_responsive(database_url: str) -> bool:
+async def postgres_responsive(host: str) -> bool:
     try:
-        conn = await asyncpg.connect(dsn=database_url)
+        conn = await asyncpg.connect(
+            host=host,
+            port=5432,
+            user='test',
+            database='test',
+            password='secret-password'
+        )
     except (ConnectionError, asyncpg.CannotConnectNowError):
         return False
 
@@ -46,11 +52,30 @@ async def postgres_responsive(database_url: str) -> bool:
         await conn.close()
 
 
+async def async_wait_until_responsive(
+    check: Callable[..., Awaitable],
+    timeout: float,
+    pause: float,
+    **kwargs: Any,
+) -> None:
+    ref = timeit.default_timer()
+    now = ref
+    while (now - ref) < timeout:
+        if await check(**kwargs):
+            return
+        await asyncio.sleep(pause)
+        now = timeit.default_timer()
+
+    raise RuntimeError('Timeout reached while waiting on service!')
+
+
 @pytest.fixture(scope='session')
-def postgres_service(docker_services, docker_compose_file):
-    print(docker_compose_file)
-    docker_services.wait_until_responsive(
-        timeout=30.0, pause=0.1, check=lambda: postgres_responsive(settings.database_url)
+async def postgres_service(docker_services):
+    await async_wait_until_responsive(
+        timeout=30,
+        pause=0.1,
+        check=postgres_responsive,
+        host='localhost'
     )
 
 

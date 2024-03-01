@@ -11,14 +11,9 @@ services:
       - backend
     expose:
       - 5432
-    env_file: test.env
-
-  pytest:
-    build:
-      context: ../
-      dockerfile: ./tests/Dockerfile
-    depends_on:
-       - postgres
-    env_file: test.env
-    networks:
-      - backend
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=secret-password
+      - POSTGRES_DB=test
