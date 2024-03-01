@@ -18,7 +18,7 @@ authors = ["PrinterOMG <PrinterOMG@ya.ru>"]
 
 [tool.poetry.dependencies]
 python = "3.11.*"
-fastapi = "^0.108.0"
+fastapi = "^0.109.1"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 asyncpg = "^0.29.0"
 alembic = "^1.12.1"
