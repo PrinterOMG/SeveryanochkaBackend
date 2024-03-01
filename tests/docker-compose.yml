@@ -1,0 +1,20 @@
+version: '3'
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  postgres:
+    container_name: severyanochka_postgres_test
+    image: postgres:16
+    networks:
+      - backend
+    expose:
+      - 5432
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=secret-password
+      - POSTGRES_DB=test

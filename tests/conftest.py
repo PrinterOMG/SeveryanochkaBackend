@@ -1,7 +1,10 @@
+import asyncio
 import gettext
+import timeit
 from datetime import datetime, timedelta, date
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable, Awaitable, Any
 
+import asyncpg
 import pycountry
 import pytest
 from fastapi.testclient import TestClient
@@ -11,12 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import NullPool
 
 from database.base import Base, get_async_session_factory
-from database.models import PhoneKey, User, Category, Brand, Country
+from database.models import PhoneKey, User, Category, Brand, Country, Manufacturer
 from main import app
 from settings import settings
 from utils.security import create_access_token
 
-DATABASE_URL_TEST = settings.test_database_url
+
+DATABASE_URL_TEST = 'postgresql+asyncpg://test:secret-password@localhost:5432/test'
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
 async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
@@ -30,8 +34,53 @@ def override_get_session_factory():
 app.dependency_overrides[get_async_session_factory] = override_get_session_factory
 
 
+async def postgres_responsive(host: str) -> bool:
+    try:
+        conn = await asyncpg.connect(
+            host=host,
+            port=5432,
+            user='test',
+            database='test',
+            password='secret-password'
+        )
+    except (ConnectionError, asyncpg.CannotConnectNowError):
+        return False
+
+    try:
+        return (await conn.fetchrow('SELECT 1'))[0] == 1
+    finally:
+        await conn.close()
+
+
+async def async_wait_until_responsive(
+    check: Callable[..., Awaitable],
+    timeout: float,
+    pause: float,
+    **kwargs: Any,
+) -> None:
+    ref = timeit.default_timer()
+    now = ref
+    while (now - ref) < timeout:
+        if await check(**kwargs):
+            return
+        await asyncio.sleep(pause)
+        now = timeit.default_timer()
+
+    raise RuntimeError('Timeout reached while waiting on service!')
+
+
+@pytest.fixture(scope='session')
+async def postgres_service(docker_services):
+    await async_wait_until_responsive(
+        timeout=30,
+        pause=0.1,
+        check=postgres_responsive,
+        host='localhost'
+    )
+
+
 @pytest.fixture(autouse=True, scope='session')
-async def prepare_database():
+async def prepare_database(postgres_service):
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -72,6 +121,21 @@ async def prepared_brands():
 
     async with async_session_maker.begin() as session:
         await session.execute(text(f'TRUNCATE TABLE {Brand.__tablename__} CASCADE;'))
+
+
+@pytest.fixture(scope='function')
+async def prepared_manufacturers():
+    manufacturers = list()
+    for i in range(1, 31):
+        manufacturers.append(Manufacturer(name=f'Manufacturer {i}'))
+
+    async with async_session_maker.begin() as session:
+        session.add_all(manufacturers)
+
+    yield manufacturers
+
+    async with async_session_maker.begin() as session:
+        await session.execute(text(f'TRUNCATE TABLE {Manufacturer.__tablename__} CASCADE;'))
 
 
 @pytest.fixture(scope='function')

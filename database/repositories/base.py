@@ -15,7 +15,7 @@ class GenericRepository(Generic[T], ABC):
     """
 
     @abstractmethod
-    async def get_by_id(self, id: int) -> Optional[T]:
+    async def get_by_id(self, id: int) -> T | None:
         """
         Get a single record by id.
 
@@ -28,7 +28,7 @@ class GenericRepository(Generic[T], ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def list(self, **filters) -> List[T]:
+    async def list(self, **filters) -> list[T]:
         """
         Gets a list of records
 
