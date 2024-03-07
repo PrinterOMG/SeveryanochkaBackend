@@ -5,7 +5,7 @@ from database.models import Country
 from tests.conftest import client, async_session_maker
 
 
-API_PREFIX = '/api/countries'
+API_PREFIX = '/countries'
 
 
 @pytest.mark.parametrize(

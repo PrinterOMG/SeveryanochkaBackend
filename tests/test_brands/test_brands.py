@@ -4,8 +4,7 @@ from httpx import AsyncClient
 from database.models import Brand
 from tests.conftest import client, async_session_maker
 
-
-API_PREFIX = '/api/brands'
+API_PREFIX = '/brands'
 
 
 @pytest.mark.parametrize(

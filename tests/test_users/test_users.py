@@ -8,7 +8,7 @@ from database.models import User
 from tests.conftest import async_session_maker, client
 
 
-API_PREFIX = '/api/users'
+API_PREFIX = '/users'
 
 
 @pytest.mark.parametrize(

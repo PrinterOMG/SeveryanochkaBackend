@@ -5,7 +5,7 @@ from database.models import Category
 from tests.conftest import client, async_session_maker
 
 
-API_PREFIX = '/api/categories'
+API_PREFIX = '/categories'
 
 
 async def test_get_categories_depth_0(prepared_category: Category):

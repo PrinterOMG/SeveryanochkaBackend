@@ -16,7 +16,7 @@ BAD_PHONES = [
     '+89307229334'
 ]
 
-API_PREFIX = '/api/phone_keys'
+API_PREFIX = '/phone_keys'
 
 
 @pytest.mark.parametrize('phone', BAD_PHONES)

@@ -5,7 +5,7 @@ from database.models import Manufacturer
 from tests.conftest import client, async_session_maker
 
 
-API_PREFIX = '/api/manufacturers'
+API_PREFIX = '/test_manufacturers'
 
 
 @pytest.mark.parametrize(
