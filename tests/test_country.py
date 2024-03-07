@@ -5,6 +5,9 @@ from database.models import Country
 from tests.conftest import client, async_session_maker
 
 
+API_PREFIX = '/api/countries'
+
+
 @pytest.mark.parametrize(
     'offset, limit',
     [
@@ -17,7 +20,7 @@ async def test_get_countries(offset, limit):
         countries = await session.scalars(stmt)
         db_countries = countries.all()
 
-    response = client.get(f'/api/country?offset={offset}&limit={limit}')
+    response = client.get(f'{API_PREFIX}?offset={offset}&limit={limit}')
 
     assert response.status_code == 200, response.status_code
 
@@ -37,7 +40,7 @@ async def test_get_country_by_id():
     async with async_session_maker() as session:
         db_country = await session.get(Country, 1)
 
-    response = client.get(f'/api/country/id/{db_country.id}')
+    response = client.get(f'{API_PREFIX}/id/{db_country.id}')
 
     assert response.status_code == 200, response.status_code
 
@@ -49,7 +52,7 @@ async def test_get_country_by_id():
 
 
 async def test_get_country_by_bad_id():
-    response = client.get('/api/country/id/9999')
+    response = client.get(f'{API_PREFIX}/id/9999')
 
     assert response.status_code == 404, response.status_code
 
@@ -58,7 +61,7 @@ async def test_get_country_by_code():
     async with async_session_maker() as session:
         db_country = await session.get(Country, 1)
 
-    response = client.get(f'/api/country/code/{db_country.code}')
+    response = client.get(f'{API_PREFIX}/code/{db_country.code}')
 
     assert response.status_code == 200, response.status_code
 
@@ -70,6 +73,6 @@ async def test_get_country_by_code():
 
 
 async def test_get_country_by_bad_code():
-    response = client.get('/api/country/code/ABD')
+    response = client.get(f'{API_PREFIX}/code/ABD')
 
     assert response.status_code == 404, response.status_code

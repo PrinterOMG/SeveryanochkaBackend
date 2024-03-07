@@ -9,7 +9,7 @@ from api.schemas.other import ErrorMessage
 from api.schemas.phone_key import PhoneKeyRead, CreatePhoneKey, VerifyPhoneKey
 from database.models import PhoneKey
 
-router = APIRouter(prefix='/phone_key', tags=['Phone verification key'])
+router = APIRouter(prefix='/phone_keys', tags=['Phone verification key'])
 
 
 @router.get(
@@ -34,7 +34,7 @@ async def get_phone_key(
 
 
 @router.post(
-    '/create',
+    '/',
     status_code=status.HTTP_201_CREATED,
     responses={
         429: {

@@ -8,6 +8,9 @@ from database.models import User
 from tests.conftest import async_session_maker, client
 
 
+API_PREFIX = '/api/users'
+
+
 @pytest.mark.parametrize(
     'phone, hashed_password, first_name, last_name, birthday, is_superuser, expires_minutes',
     [
@@ -16,7 +19,7 @@ from tests.conftest import async_session_maker, client
     ids=['Base user']
 )
 async def test_user_delete(prepared_user: User, authenticated_client: AsyncClient):
-    response = await authenticated_client.delete('/api/user/me')
+    response = await authenticated_client.delete(f'{API_PREFIX}/me')
 
     assert response.status_code == 204
 
@@ -34,7 +37,7 @@ async def test_user_delete(prepared_user: User, authenticated_client: AsyncClien
     ids=['Base user']
 )
 async def test_user_get(prepared_user: User, authenticated_client: AsyncClient):
-    response = await authenticated_client.get('/api/user/me')
+    response = await authenticated_client.get(f'{API_PREFIX}/me')
 
     assert response.status_code == 200
 
@@ -56,7 +59,7 @@ async def test_user_patch_success(prepared_user: User, authenticated_client: Asy
         'birthday': date(year=1999, month=1, day=1)
     }
 
-    response = await authenticated_client.patch('/api/user/me', json=jsonable_encoder(data))
+    response = await authenticated_client.patch(f'{API_PREFIX}/me', json=jsonable_encoder(data))
 
     assert response.status_code == 200, response.text
 
@@ -85,7 +88,7 @@ async def test_user_patch_bad_birthday_change(prepared_user: User, authenticated
         'birthday': date(year=2000, month=1, day=1)
     }
 
-    response = await authenticated_client.patch('/api/user/me', json=jsonable_encoder(data))
+    response = await authenticated_client.patch(f'{API_PREFIX}/me', json=jsonable_encoder(data))
 
     assert response.status_code == 400, response.text
 
@@ -106,7 +109,7 @@ async def test_user_patch_bad_birthday_change(prepared_user: User, authenticated
 async def test_user_patch_bad_json(prepared_user: User, authenticated_client: AsyncClient):
     data = {}
 
-    response = await authenticated_client.patch('/api/user/me', json=jsonable_encoder(data))
+    response = await authenticated_client.patch(f'{API_PREFIX}/me', json=jsonable_encoder(data))
 
     assert response.status_code == 400, response.text
 
@@ -127,14 +130,14 @@ async def test_user_patch_bad_json(prepared_user: User, authenticated_client: As
     ids=['Base user']
 )
 async def test_check_user_success(prepared_user: User):
-    response = client.get('/api/user/check', params={'phone': '+71234567890'})
+    response = client.get(f'{API_PREFIX}/check', params={'phone': '+71234567890'})
 
     assert response.status_code == 200, response.text
     assert response.json()['success'] is True
 
 
 async def test_check_bad_user():
-    response = client.get('/api/user/check', params={'phone': '+71234567890'})
+    response = client.get(f'{API_PREFIX}/check', params={'phone': '+71234567890'})
 
     assert response.status_code == 404, response.text
 
@@ -149,6 +152,6 @@ async def test_check_bad_user():
     ]
 )
 async def test_set_avatar(prepared_image, prepared_user: User, authenticated_client: AsyncClient):
-    response = await authenticated_client.post('/api/user/me/avatar', files={'avatar': prepared_image})
+    response = await authenticated_client.post(f'{API_PREFIX}/me/avatar', files={'avatar': prepared_image})
 
     assert response.status_code == 200, response.text

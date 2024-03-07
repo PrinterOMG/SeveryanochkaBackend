@@ -16,6 +16,8 @@ BAD_PHONES = [
     '+89307229334'
 ]
 
+API_PREFIX = '/api/phone_keys'
+
 
 @pytest.mark.parametrize('phone', BAD_PHONES)
 async def test_create_bad_phone(phone: str):
@@ -23,7 +25,7 @@ async def test_create_bad_phone(phone: str):
         'phone': phone
     }
 
-    response = client.post('/api/phone_key/create', json=body)
+    response = client.post(f'{API_PREFIX}', json=body)
 
     assert response.status_code == 422
 
@@ -39,10 +41,10 @@ async def test_create_rate_limit():
     body = {'phone': '+70000000000'}
 
     for _ in range(3):
-        response = client.post('/api/phone_key/create', json=body)
+        response = client.post(f'{API_PREFIX}', json=body)
         assert response.status_code == 201
 
-    response = client.post('/api/phone_key/create', json=body)
+    response = client.post(f'{API_PREFIX}', json=body)
     assert response.status_code == 429
 
 
@@ -51,7 +53,7 @@ async def test_create_success():
         'phone': '+79307229334'
     }
 
-    response = client.post('/api/phone_key/create', json=body)
+    response = client.post(f'{API_PREFIX}', json=body)
     assert response.status_code == 201, response.text
     result = response.json()
 
@@ -78,7 +80,7 @@ async def test_verify_success(prepared_phone_key: PhoneKey):
         'code': '0000'
     }
 
-    response = client.post('/api/phone_key/verify', json=body)
+    response = client.post(f'{API_PREFIX}/verify', json=body)
 
     assert response.status_code == 200
 
@@ -104,7 +106,7 @@ async def test_verify_bad_code(prepared_phone_key: PhoneKey):
         'code': '1111'
     }
 
-    response = client.post('/api/phone_key/verify', json=body)
+    response = client.post(f'{API_PREFIX}/verify', json=body)
 
     assert response.status_code == 401
 
@@ -119,7 +121,7 @@ async def test_verify_invalid_phone_key():
         'code': '0000'
     }
 
-    response = client.post('/api/phone_key/verify', json=body)
+    response = client.post(f'{API_PREFIX}/verify', json=body)
 
     assert response.status_code == 400
 
@@ -143,7 +145,7 @@ async def test_verify_bad_phone_key(prepared_phone_key: PhoneKey):
         'code': '0000'
     }
 
-    response = client.post('/api/phone_key/verify', json=body)
+    response = client.post(f'{API_PREFIX}/verify', json=body)
 
     assert response.status_code == 400
 
@@ -158,7 +160,7 @@ async def test_verify_bad_phone_key(prepared_phone_key: PhoneKey):
     ]
 )
 async def test_get_success(prepared_phone_key: PhoneKey):
-    response = client.get(f'/api/phone_key/{prepared_phone_key.key}')
+    response = client.get(f'{API_PREFIX}/{prepared_phone_key.key}')
 
     assert response.status_code == 200
 
@@ -171,6 +173,6 @@ async def test_get_success(prepared_phone_key: PhoneKey):
 
 
 async def test_get_invalid_phone_key():
-    response = client.get('/api/phone_key/invalid_key')
+    response = client.get(f'{API_PREFIX}/invalid_key')
 
     assert response.status_code == 404

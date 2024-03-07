@@ -5,8 +5,11 @@ from database.models import Category
 from tests.conftest import client, async_session_maker
 
 
+API_PREFIX = '/api/categories'
+
+
 async def test_get_categories_depth_0(prepared_category: Category):
-    response = client.get('/api/category?depth=0')
+    response = client.get(f'{API_PREFIX}?depth=0')
 
     assert response.status_code == 200, response.status_code
 
@@ -21,7 +24,7 @@ async def test_get_categories_depth_0(prepared_category: Category):
 
 @pytest.mark.parametrize(
     'url',
-    ['/api/category?depth=1', '/api/category'],
+    [f'{API_PREFIX}?depth=1', API_PREFIX],
     ids=['depth=1', 'without depth']
 )
 async def test_get_categories_depth_1(prepared_category: Category, url: str):
@@ -44,13 +47,13 @@ async def test_get_categories_depth_1(prepared_category: Category, url: str):
     ids=['-1', 'abc']
 )
 async def test_get_categories_bad_depth(depth):
-    response = client.get('/api/category?depth={depth}')
+    response = client.get(f'{API_PREFIX}?depth={depth}')
 
     assert response.status_code == 422, response.status_code
 
 
 async def test_get_category_depth_0(prepared_category: Category):
-    response = client.get(f'/api/category/{prepared_category.id}?depth=0')
+    response = client.get(f'{API_PREFIX}/{prepared_category.id}?depth=0')
 
     assert response.status_code == 200, response.status_code
 
@@ -63,7 +66,7 @@ async def test_get_category_depth_0(prepared_category: Category):
 
 @pytest.mark.parametrize(
     'url',
-    ['/api/category/{category_id}?depth=1', '/api/category/{category_id}'],
+    [API_PREFIX + '/{category_id}?depth=1', API_PREFIX + '/{category_id}'],
     ids=['depth=1', 'without depth']
 )
 async def test_get_category_depth_1(prepared_category: Category, url):
@@ -79,7 +82,7 @@ async def test_get_category_depth_1(prepared_category: Category, url):
 
 
 def test_get_bad_category():
-    response = client.get('/api/category/123')
+    response = client.get(f'{API_PREFIX}/123')
 
     assert response.status_code == 404, response.status_code
 
@@ -91,7 +94,7 @@ def test_get_bad_category():
 )
 def test_get_category_bad_depth(depth):
     # Category with id 123 does not exist in this context, but here it doesn't matter
-    response = client.get('/api/category/123?depth={depth}')
+    response = client.get(f'{API_PREFIX}/123?depth={depth}')
 
     assert response.status_code == 422, response.status_code
 
@@ -102,7 +105,7 @@ async def create_test_category(parent_id: int | None, client: AsyncClient) -> tu
         'parent_id': parent_id
     }
 
-    response = await client.post('/api/category/', json=body)
+    response = await client.post(f'{API_PREFIX}/', json=body)
 
     assert response.status_code == 201, response.status_code
 
@@ -146,7 +149,7 @@ async def test_create_category_with_bad_parent(superuser_client: AsyncClient):
         'parent_id': 123
     }
 
-    response = await superuser_client.post('/api/category/', json=body)
+    response = await superuser_client.post(f'{API_PREFIX}/', json=body)
 
     assert response.status_code == 400, response.status_code
 
@@ -161,7 +164,7 @@ async def test_create_category_with_bad_parent(superuser_client: AsyncClient):
     ids=['Without parent_id', 'Without name', 'Empty']
 )
 async def test_create_category_with_bad_body(body: dict, superuser_client: AsyncClient):
-    response = await superuser_client.post('/api/category/', json=body)
+    response = await superuser_client.post(f'{API_PREFIX}/', json=body)
 
     assert response.status_code == 422, response.status_code
 
@@ -171,7 +174,7 @@ async def test_update_category_name(prepared_category: Category, superuser_clien
         'name': 'test_category edited'
     }
 
-    response = await superuser_client.patch(f'/api/category/{prepared_category.id}', json=body)
+    response = await superuser_client.patch(f'{API_PREFIX}/{prepared_category.id}', json=body)
 
     assert response.status_code == 200, response.status_code
 
@@ -196,7 +199,7 @@ async def test_update_category_all(prepared_category: Category, superuser_client
         'parent_id': None
     }
 
-    response = await superuser_client.patch(f'/api/category/{first_child.id}', json=body)
+    response = await superuser_client.patch(f'{API_PREFIX}/{first_child.id}', json=body)
 
     assert response.status_code == 200, response.status_code
 
@@ -218,13 +221,13 @@ async def test_update_bad_category(superuser_client: AsyncClient):
         'name': 'test_category edited'
     }
 
-    response = await superuser_client.patch('/api/category/123', json=body)
+    response = await superuser_client.patch(f'{API_PREFIX}/123', json=body)
 
     assert response.status_code == 404, response.status_code
 
 
 async def test_delete_category(prepared_category: Category, superuser_client: AsyncClient):
-    response = await superuser_client.delete(f'/api/category/{prepared_category.id}')
+    response = await superuser_client.delete(f'{API_PREFIX}/{prepared_category.id}')
 
     assert response.status_code == 204, response.status_code
 
@@ -239,6 +242,6 @@ async def test_delete_category(prepared_category: Category, superuser_client: As
 
 
 async def test_delete_bad_category(superuser_client: AsyncClient):
-    response = await superuser_client.delete('/api/category/123')
+    response = await superuser_client.delete(f'{API_PREFIX}/123')
 
     assert response.status_code == 404, response.status_code

@@ -8,7 +8,7 @@ from api.schemas.other import ErrorMessage
 from database.models import Category
 
 
-router = APIRouter(prefix='/category', tags=['Category'])
+router = APIRouter(prefix='/categories', tags=['Categories'])
 
 
 async def refresh_sub_categories(uow, category: Category, max_depth: int, cur_depth=0):

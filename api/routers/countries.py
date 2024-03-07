@@ -6,7 +6,7 @@ from api.dependencies import UOWDep
 from api.schemas.country import CountryRead
 
 
-router = APIRouter(prefix='/country', tags=['Country'])
+router = APIRouter(prefix='/countries', tags=['Countries'])
 
 
 @router.get('/')

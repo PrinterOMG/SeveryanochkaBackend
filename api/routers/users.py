@@ -12,7 +12,7 @@ from api.schemas.other import ErrorMessage
 from api.schemas.user import UserRead, UserCheckResult, UserUpdate, SetAvatarResult
 from database.models import User
 
-router = APIRouter(prefix='/user', tags=['User'])
+router = APIRouter(prefix='/users', tags=['Users'])
 
 
 @router.get(
@@ -100,7 +100,7 @@ async def update_me(
 
 @router.post(
     '/me/avatar',
-    response_model=UserRead,
+    response_model=SetAvatarResult,
     responses={
         400: {
             'description': 'Something bad with avatar file. Check detail',

@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 
 from .auth import router as auth_router
-from .user import router as user_router
-from .phone_key import router as phone_key_router
-from .category import router as category_router
-from .brand import router as brand_router
-from .country import router as county_router
-from .manufacturer import router as manufacturer_router
+from .users import router as user_router
+from .phone_keys import router as phone_key_router
+from .categories import router as category_router
+from .brands import router as brand_router
+from .countries import router as county_router
+from .manufacturers import router as manufacturer_router
 
 router = APIRouter(prefix='/api')
 

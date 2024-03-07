@@ -5,6 +5,9 @@ from database.models import Brand
 from tests.conftest import client, async_session_maker
 
 
+API_PREFIX = '/api/brands'
+
+
 @pytest.mark.parametrize(
     'limit, offset',
     [
@@ -12,7 +15,7 @@ from tests.conftest import client, async_session_maker
     ]
 )
 async def test_get_brands(prepared_brands: list[Brand], limit, offset):
-    response = client.get(f'/api/brand?limit={limit}&offset={offset}')
+    response = client.get(f'{API_PREFIX}?limit={limit}&offset={offset}')
 
     assert response.status_code == 200, response.status_code
 
@@ -30,7 +33,7 @@ async def test_get_brands(prepared_brands: list[Brand], limit, offset):
 async def test_get_brand(prepared_brands: list[Brand]):
     brand = prepared_brands[0]
 
-    response = client.get(f'/api/brand/{brand.id}')
+    response = client.get(f'{API_PREFIX}/{brand.id}')
 
     assert response.status_code == 200, response.status_code
 
@@ -41,7 +44,7 @@ async def test_get_brand(prepared_brands: list[Brand]):
 
 
 async def test_get_bad_brand():
-    response = client.get('/api/brand/123')
+    response = client.get(f'{API_PREFIX}/123')
 
     assert response.status_code == 404, response.status_code
 
@@ -51,7 +54,7 @@ async def test_create_brand(superuser_client: AsyncClient):
         'name': 'abc'
     }
 
-    response = await superuser_client.post('/api/brand', json=body)
+    response = await superuser_client.post(API_PREFIX, json=body)
 
     assert response.status_code == 201, response.status_code
 
@@ -72,7 +75,7 @@ async def test_create_brand(superuser_client: AsyncClient):
     ]
 )
 async def test_create_brand_bad_body(body: dict, superuser_client: AsyncClient):
-    response = await superuser_client.post('/api/brand', json=body)
+    response = await superuser_client.post(API_PREFIX, json=body)
 
     assert response.status_code == 422, response.status_code
 
@@ -84,7 +87,7 @@ async def test_update_brand(prepared_brands: list[Brand], superuser_client: Asyn
         'name': 'test brand'
     }
 
-    response = await superuser_client.patch(f'/api/brand/{prepared_brand.id}', json=body)
+    response = await superuser_client.patch(f'{API_PREFIX}/{prepared_brand.id}', json=body)
 
     assert response.status_code == 200, response.status_code
 
@@ -103,7 +106,7 @@ async def test_update_bad_brand(superuser_client: AsyncClient):
         'name': 'test brand'
     }
 
-    response = await superuser_client.patch('/api/brand/123', json=body)
+    response = await superuser_client.patch(f'{API_PREFIX}/123', json=body)
 
     assert response.status_code == 404, response.status_code
 
@@ -117,7 +120,7 @@ async def test_update_bad_brand(superuser_client: AsyncClient):
 async def test_update_brand_bad_body(body: dict, prepared_brands: list[Brand], superuser_client: AsyncClient):
     prepared_brand = prepared_brands[0]
 
-    response = await superuser_client.patch(f'/api/brand/{prepared_brand.id}', json=body)
+    response = await superuser_client.patch(f'{API_PREFIX}/{prepared_brand.id}', json=body)
 
     assert response.status_code == 422, response
 
@@ -125,7 +128,7 @@ async def test_update_brand_bad_body(body: dict, prepared_brands: list[Brand], s
 async def test_delete_brand(prepared_brands: list[Brand], superuser_client: AsyncClient):
     brand = prepared_brands[0]
 
-    response = await superuser_client.delete(f'/api/brand/{brand.id}')
+    response = await superuser_client.delete(f'{API_PREFIX}/{brand.id}')
 
     assert response.status_code == 204, response.status_code
 
@@ -136,6 +139,6 @@ async def test_delete_brand(prepared_brands: list[Brand], superuser_client: Asyn
 
 
 async def test_delete_bad_brand(superuser_client: AsyncClient):
-    response = await superuser_client.delete('/api/brand/123')
+    response = await superuser_client.delete(f'{API_PREFIX}/123')
 
     assert response.status_code == 404, response.status_code

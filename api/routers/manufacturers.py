@@ -6,7 +6,7 @@ from api.dependencies import UOWDep, current_user_id_admin
 from api.schemas.manufacturer import ManufacturerRead, ManufacturerCreate, ManufacturerUpdate
 from database.models import Manufacturer
 
-router = APIRouter(prefix='/manufacturer', tags=['Manufacturer'])
+router = APIRouter(prefix='/manufacturers', tags=['Manufacturers'])
 
 
 @router.get('')
