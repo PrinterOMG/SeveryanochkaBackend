@@ -7,7 +7,7 @@ from api.schemas.brand import BrandRead, BrandCreate, BrandUpdate
 from api.schemas.other import ErrorMessage
 from database.models import Brand
 
-router = APIRouter(prefix='/brands', tags=['BrandS'])
+router = APIRouter(prefix='/brands', tags=['Brands'])
 
 
 @router.get('')
