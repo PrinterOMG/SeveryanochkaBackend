@@ -8,7 +8,7 @@ from .brands import router as brand_router
 from .countries import router as county_router
 from .manufacturers import router as manufacturer_router
 
-router = APIRouter(prefix='/api')
+router = APIRouter()
 
 router.include_router(auth_router)
 router.include_router(user_router)
