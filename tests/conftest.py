@@ -1,7 +1,10 @@
 import asyncio
 import gettext
+import io
 import timeit
 from datetime import datetime, timedelta, date
+from pathlib import Path
+from tempfile import TemporaryFile, NamedTemporaryFile
 from typing import AsyncGenerator, Callable, Awaitable, Any
 
 import asyncpg
@@ -200,11 +203,13 @@ async def prepared_user(
 
 
 @pytest.fixture(scope='function')
-def prepared_image(size) -> Image:
-    new_image = Image.new('RGBA', size, (255, 255, 255, 0))
-    new_image.save('test.png')
+def prepared_image(size: tuple[int, int], extension: str) -> Image:
+    new_image = Image.new('RGB', size, (255, 255, 255, 0))
 
-    return new_image
+    file = NamedTemporaryFile(suffix=f'.{extension}')
+    new_image.save(file, format=extension.upper())
+
+    return file
 
 
 @pytest.fixture(scope='function')
