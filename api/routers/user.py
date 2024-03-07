@@ -9,7 +9,7 @@ import aiofiles
 
 from api.dependencies import get_current_user, UOWDep
 from api.schemas.other import ErrorMessage
-from api.schemas.user import UserRead, UserCheckResult, UserUpdate
+from api.schemas.user import UserRead, UserCheckResult, UserUpdate, SetAvatarResult
 from database.models import User
 
 router = APIRouter(prefix='/user', tags=['User'])
@@ -154,7 +154,7 @@ async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], a
     if old_avatar is not None:
         Path(old_avatar).unlink(missing_ok=True)
 
-    return current_user
+    return SetAvatarResult(avatar_url=current_user.avatar_url)
 
 
 @router.delete('/me/avatar', status_code=status.HTTP_204_NO_CONTENT)

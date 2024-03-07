@@ -28,3 +28,7 @@ class UserUpdate(UserBase):
 
 class UserCheckResult(BaseModel):
     success: bool
+
+
+class SetAvatarResult(BaseModel):
+    avatar_url: str
