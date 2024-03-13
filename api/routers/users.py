@@ -127,7 +127,8 @@ async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], a
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='File must be an image file (.png or .jpeg)')
 
-    image = Image.open(io.BytesIO(await avatar.read()))
+    file_bytes = io.BytesIO(await avatar.read())
+    image = Image.open(file_bytes)
     width, height = image.size
     if width >= 400 or height >= 400:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,7 +143,7 @@ async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], a
     path_to_avatar = output_directory / filename
 
     async with aiofiles.open(path_to_avatar, mode='wb') as file:
-        await file.write(await avatar.read())
+        await file.write(file_bytes.getbuffer())
 
     old_avatar = current_user.avatar_url
     current_user.avatar_url = str(path_to_avatar)
