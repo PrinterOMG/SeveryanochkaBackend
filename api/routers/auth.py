@@ -8,7 +8,7 @@ from api.dependencies import UOWDep
 from api.schemas.auth import Token, RegisterRequest, RegisterResult, ResetPasswordRequest
 from api.schemas.other import ErrorMessage
 from database.models.user import User
-from settings import settings
+from config import settings
 from utils.security import create_access_token, get_password_hash, verify_password
 
 router = APIRouter(prefix='/auth', tags=['Auth'])

@@ -1,4 +1,3 @@
-from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings
 
 
@@ -9,12 +8,11 @@ class Settings(BaseSettings):
     postgres_host: str = 'postgres'
     postgres_port: int = 5432
 
-    database_url: str = ''
-
-    test_database_url: str = ''
     secret_key: str
     algorithm: str = 'HS256'
     access_token_expires_minutes: int = 30
+
+    database_url: str = ''
 
     def __init__(self):
         super().__init__()

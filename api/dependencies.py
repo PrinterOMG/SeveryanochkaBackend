@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 
 from api.schemas.auth import TokenData
 from database.models import User
-from settings import settings
+from config import settings
 from utils.unit_of_work import UnitOfWorkBase, UnitOfWork
 
 
