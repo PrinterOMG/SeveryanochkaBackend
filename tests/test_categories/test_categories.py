@@ -1,3 +1,5 @@
+from uuid import UUID
+
 import pytest
 from httpx import AsyncClient
 
@@ -99,7 +101,7 @@ def test_get_category_bad_depth(depth):
     assert response.status_code == 422, response.status_code
 
 
-async def create_test_category(parent_id: int | None, client: AsyncClient) -> tuple[dict, Category]:
+async def create_test_category(parent_id: UUID | None, client: AsyncClient) -> tuple[dict, Category]:
     body = {
         'name': 'test_category',
         'parent_id': parent_id
@@ -169,19 +171,20 @@ async def test_create_category_with_bad_body(body: dict, superuser_client: Async
     assert response.status_code == 422, response.status_code
 
 
-async def test_update_category_name(prepared_category: Category, superuser_client: AsyncClient):
+async def test_update_category(prepared_category: Category, superuser_client: AsyncClient):
     body = {
-        'name': 'test_category edited'
+        'name': 'test_category edited',
+        'parent_id': None
     }
 
-    response = await superuser_client.patch(f'{API_PREFIX}/{prepared_category.id}', json=body)
+    response = await superuser_client.put(f'{API_PREFIX}/{prepared_category.id}', json=body)
 
     assert response.status_code == 200, response.status_code
 
     edited_category = response.json()
 
     assert edited_category['name'] == body['name']
-    assert edited_category['parent_id'] == prepared_category.parent_id
+    assert edited_category['parent_id'] == str(prepared_category.parent_id)
 
     async with async_session_maker() as session:
         db_category = await session.get(Category, prepared_category.id)
@@ -191,7 +194,7 @@ async def test_update_category_name(prepared_category: Category, superuser_clien
     assert len(db_category.child) == len(prepared_category.child)
 
 
-async def test_update_category_all(prepared_category: Category, superuser_client: AsyncClient):
+async def test_update_category_remove_parent(prepared_category: Category, superuser_client: AsyncClient):
     first_child = prepared_category.child[0]
 
     body = {
@@ -199,7 +202,7 @@ async def test_update_category_all(prepared_category: Category, superuser_client
         'parent_id': None
     }
 
-    response = await superuser_client.patch(f'{API_PREFIX}/{first_child.id}', json=body)
+    response = await superuser_client.put(f'{API_PREFIX}/{first_child.id}', json=body)
 
     assert response.status_code == 200, response.status_code
 

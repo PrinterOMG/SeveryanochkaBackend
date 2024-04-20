@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
@@ -23,7 +25,7 @@ def test_get_manufacturers(prepared_manufacturers: list[Manufacturer], limit, of
 
     for manufacturer in prepared_manufacturers[offset:offset + limit]:
         manufacturer_data = {
-            'id': manufacturer.id,
+            'id': str(manufacturer.id),
             'name': manufacturer.name
         }
 
@@ -39,12 +41,12 @@ async def test_get_manufacturer(prepared_manufacturers: list[Manufacturer]):
 
     manufacturer_data = response.json()
 
-    assert manufacturer_data['id'] == manufacturer.id
+    assert manufacturer_data['id'] == str(manufacturer.id)
     assert manufacturer_data['name'] == manufacturer.name
 
 
 async def test_get_bad_manufacturer():
-    response = client.get(f'{API_PREFIX}/123')
+    response = client.get(f'{API_PREFIX}/{uuid.uuid4()}')
 
     assert response.status_code == 404, response.status_code
 
@@ -87,7 +89,7 @@ async def test_update_manufacturer(prepared_manufacturers: list[Manufacturer], s
         'name': 'test manufacturer'
     }
 
-    response = await superuser_client.patch(f'{API_PREFIX}/{prepared_manufacturer.id}', json=body)
+    response = await superuser_client.put(f'{API_PREFIX}/{prepared_manufacturer.id}', json=body)
 
     assert response.status_code == 200, response.status_code
 
@@ -106,7 +108,7 @@ async def test_update_bad_manufacturer(superuser_client: AsyncClient):
         'name': 'test manufacturer'
     }
 
-    response = await superuser_client.patch(f'{API_PREFIX}/123', json=body)
+    response = await superuser_client.put(f'{API_PREFIX}/{uuid.uuid4()}', json=body)
 
     assert response.status_code == 404, response.status_code
 
@@ -120,7 +122,7 @@ async def test_update_bad_manufacturer(superuser_client: AsyncClient):
 async def test_update_manufacturer_bad_body(prepared_manufacturers: list[Manufacturer], body: dict, superuser_client: AsyncClient):
     prepared_manufacturer = prepared_manufacturers[0]
 
-    response = await superuser_client.patch(f'{API_PREFIX}/{prepared_manufacturer.id}', json=body)
+    response = await superuser_client.put(f'{API_PREFIX}/{prepared_manufacturer.id}', json=body)
 
     assert response.status_code == 422, response
 
@@ -139,6 +141,6 @@ async def test_delete_manufacturer(prepared_manufacturers: list[Manufacturer], s
 
 
 async def test_delete_bad_manufacturer(superuser_client: AsyncClient):
-    response = await superuser_client.delete(f'{API_PREFIX}/123')
+    response = await superuser_client.delete(f'{API_PREFIX}/{uuid.uuid4()}')
 
-    assert response.status_code == 404, response.status_code
+    assert response.status_code == 204, response.status_code

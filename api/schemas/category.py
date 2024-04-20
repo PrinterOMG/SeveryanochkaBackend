@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -6,16 +8,16 @@ class CategoryBase(BaseModel):
 
 
 class CategoryRead(CategoryBase):
-    id: int
+    id: UUID
 
-    parent_id: int | None
+    parent_id: UUID | None
     child: list['CategoryRead']
 
 
 class CategoryCreate(CategoryBase):
-    parent_id: int | None
+    parent_id: UUID | None
 
 
 class CategoryUpdate(CategoryBase):
-    name: str | None = None
-    parent_id: int | None = None
+    name: str
+    parent_id: UUID | None

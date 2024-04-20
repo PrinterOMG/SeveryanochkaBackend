@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +14,7 @@ class UserBase(BaseModel):
 
 
 class UserRead(UserBase):
-    id: int
+    id: UUID
     created_at: datetime
     avatar_url: str | None
     is_superuser: bool
@@ -21,9 +22,9 @@ class UserRead(UserBase):
 
 
 class UserUpdate(UserBase):
-    first_name: str | None = None
-    last_name: str | None = None
-    birthday: date | None = None
+    first_name: str | None
+    last_name: str | None
+    birthday: date | None
 
 
 class UserCheckResult(BaseModel):

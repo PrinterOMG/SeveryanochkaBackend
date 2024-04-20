@@ -76,7 +76,7 @@ async def test_create_success():
 )
 async def test_verify_success(prepared_phone_key: PhoneKey):
     body = {
-        'phone_key': prepared_phone_key.key,
+        'key': prepared_phone_key.key,
         'code': '0000'
     }
 
@@ -102,7 +102,7 @@ async def test_verify_success(prepared_phone_key: PhoneKey):
 )
 async def test_verify_bad_code(prepared_phone_key: PhoneKey):
     body = {
-        'phone_key': prepared_phone_key.key,
+        'key': prepared_phone_key.key,
         'code': '1111'
     }
 
@@ -117,7 +117,7 @@ async def test_verify_bad_code(prepared_phone_key: PhoneKey):
 
 async def test_verify_invalid_phone_key():
     body = {
-        'phone_key': 'invalid_key',
+        'key': 'invalid_key',
         'code': '0000'
     }
 
@@ -141,7 +141,7 @@ async def test_verify_invalid_phone_key():
 )
 async def test_verify_bad_phone_key(prepared_phone_key: PhoneKey):
     body = {
-        'phone_key': prepared_phone_key.key,
+        'key': prepared_phone_key.key,
         'code': '0000'
     }
 

@@ -1,19 +1,18 @@
-import uuid
-from datetime import timedelta, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Path, HTTPException, status
 
-from api.dependencies import UOWDep
+from api.dependencies import PhoneKeyServiceDep
 from api.schemas.other import ErrorMessage
 from api.schemas.phone_key import PhoneKeyRead, CreatePhoneKey, VerifyPhoneKey
-from database.models import PhoneKey
+from core.exceptions.phone_key import PhoneKeyCreateLimitError, BadPhoneKeyError, BadConfirmationCodeError
 
 router = APIRouter(prefix='/phone_keys', tags=['Phone verification key'])
 
 
 @router.get(
-    '/{phone_key}',
+    '/{key}',
+    response_model=PhoneKeyRead,
     responses={
         404: {
             'description': 'Key not found',
@@ -22,13 +21,13 @@ router = APIRouter(prefix='/phone_keys', tags=['Phone verification key'])
     }
 )
 async def get_phone_key(
-        phone_key: Annotated[str, Path(title='Phone key', description='Phone key')],
-        uow: UOWDep
-) -> PhoneKeyRead:
-    async with uow:
-        phone_key = await uow.phone_key.get_by_key(phone_key)
-        if phone_key is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Key is invalid')
+        key: Annotated[str, Path(title='Key', description='Key')],
+        phone_key_service: PhoneKeyServiceDep
+):
+    phone_key = await phone_key_service.get_by_key(key)
+
+    if phone_key is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Key is invalid')
 
     return phone_key
 
@@ -36,18 +35,19 @@ async def get_phone_key(
 @router.post(
     '/',
     status_code=status.HTTP_201_CREATED,
+    response_model=PhoneKeyRead,
     responses={
         429: {
             'description': 'Too many create requests (limit is 3 per hour)',
             'model': ErrorMessage
         },
-        503: {
+        530: {
             'description': 'SMS service unavailable',
             'model': ErrorMessage
         }
     }
 )
-async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead:
+async def create_phone_key(request: CreatePhoneKey, phone_key_service: PhoneKeyServiceDep):
     """
     Creates a key for requests with a phone number confirmation.
 
@@ -58,24 +58,15 @@ async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead
 
     The key will need to be verified with the `/auth/verify_phone_key` request
     """
-    async with uow:
-        phone_keys = await uow.phone_key.get_last_hour_keys_by_phone(request.phone)
-        if len(phone_keys) >= 3:
-            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                                detail='The request limit (3 per hour) for this number has been exceeded')
+    try:
+        phone_key = await phone_key_service.create(request.phone)
+    except PhoneKeyCreateLimitError as error:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail='The request limit (3 per hour) for this number has been exceeded'
+        ) from error
 
-        key = str(uuid.uuid4())  # Получение ключа от стороннего сервиса
-        expire_date = datetime.utcnow() + timedelta(minutes=15)
-        new_phone_key = PhoneKey(
-            key=key,
-            phone=request.phone,
-            expires_at=expire_date
-        )
-        new_phone_key = await uow.phone_key.add(new_phone_key)
-
-        await uow.commit()
-
-    return new_phone_key
+    return phone_key
 
 
 @router.post(
@@ -91,7 +82,7 @@ async def create_phone_key(request: CreatePhoneKey, uow: UOWDep) -> PhoneKeyRead
         }
     }
 )
-async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead:
+async def verify_phone_key(request: VerifyPhoneKey, phone_key_service: PhoneKeyServiceDep) -> PhoneKeyRead:
     """
     Verifies the phone key so that you can then use it to perform an operation like registration or password reset
 
@@ -99,20 +90,17 @@ async def verify_phone_key(request: VerifyPhoneKey, uow: UOWDep) -> PhoneKeyRead
 
     * (During development, the code 0000 will always be correct and nothing is sent to the user's phone number)
     """
-    async with uow:
-        phone_key = await uow.phone_key.get_by_key(request.phone_key)
-        if phone_key is None or phone_key.expires_at < datetime.utcnow() or phone_key.is_verified:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail='Key is expired, invalid or already verified')
-
-        is_correct_code = request.code == '0000'  # Проверка кода через сторонний сервис
-        if not is_correct_code:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Confirmation code is invalid')
-
-        phone_key.is_verified = True
-        phone_key.verified_at = datetime.utcnow()
-        phone_key.expires_at = datetime.utcnow() + timedelta(minutes=10)
-        phone_key = await uow.phone_key.update(phone_key)
-        await uow.commit()
+    try:
+        phone_key = await phone_key_service.verify(key=request.key, code=request.code)
+    except BadPhoneKeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Key is expired, invalid or already verified'
+        ) from error
+    except BadConfirmationCodeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f'Confirmation code {error.confirmation_code} is invalid'
+        ) from error
 
     return phone_key

@@ -1,25 +1,23 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, status, HTTPException, Query, Depends
 
-from api.dependencies import current_user_id_admin, UOWDep
+from api.dependencies import current_user_id_admin, BrandsServiceDep
 from api.schemas.brand import BrandRead, BrandCreate, BrandUpdate
 from api.schemas.other import ErrorMessage
-from database.models import Brand
+from core.exceptions.base import EntityNotFoundError
 
 router = APIRouter(prefix='/brands', tags=['Brands'])
 
 
-@router.get('')
+@router.get('', response_model=list[BrandRead])
 async def get_brands(
-        uow: UOWDep,
+        brand_service: BrandsServiceDep,
         limit: Annotated[int, Query(ge=1, le=20)] = 10,
         offset: Annotated[int, Query(ge=0)] = 0
-) -> list[BrandRead]:
-    async with uow:
-        brands = await uow.brand.list(limit=limit, offset=offset)
-
-    return brands
+):
+    return await brand_service.get_all(limit=limit, offset=offset)
 
 
 @router.get(
@@ -29,11 +27,11 @@ async def get_brands(
             'model': ErrorMessage,
             'description': 'Brand not found'
         }
-    }
+    },
+    response_model=BrandRead
 )
-async def get_brand(uow: UOWDep, brand_id: int) -> BrandRead:
-    async with uow:
-        brand = await uow.brand.get_by_id(brand_id)
+async def get_brand(brand_service: BrandsServiceDep, brand_id: UUID):
+    brand = await brand_service.get_by_id(brand_id)
 
     if brand is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Brand with id {brand_id} not found')
@@ -47,19 +45,14 @@ async def get_brand(uow: UOWDep, brand_id: int) -> BrandRead:
     status_code=status.HTTP_201_CREATED,
     response_model=BrandRead
 )
-async def create_brand(uow: UOWDep, new_brand: BrandCreate) -> Brand:
-    async with uow:
-        brand = Brand(**new_brand.model_dump())
-        brand = await uow.brand.add(brand)
-
-        await uow.commit()
-
-    return brand
+async def create_brand(brand_service: BrandsServiceDep, new_brand: BrandCreate):
+    return await brand_service.create(new_brand)
 
 
-@router.patch(
+@router.put(
     '/{brand_id}',
     dependencies=[Depends(current_user_id_admin)],
+    response_model=BrandRead,
     responses={
         404: {
             'model': ErrorMessage,
@@ -67,19 +60,11 @@ async def create_brand(uow: UOWDep, new_brand: BrandCreate) -> Brand:
         }
     }
 )
-async def update_brand(brand_id: int, uow: UOWDep, brand_update: BrandUpdate) -> BrandRead:
-    async with uow:
-        brand = await uow.brand.get_by_id(brand_id)
-
-        if brand is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Brand with id {brand_id} not found')
-
-        update_data = brand_update.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(brand, field, value)
-
-        await uow.brand.update(brand)
-        await uow.commit()
+async def update_brand(brand_id: UUID, brand_update: BrandUpdate, brand_service: BrandsServiceDep):
+    try:
+        brand = await brand_service.update(brand_id, brand_update)
+    except EntityNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
     return brand
 
@@ -95,12 +80,5 @@ async def update_brand(brand_id: int, uow: UOWDep, brand_update: BrandUpdate) ->
         }
     }
 )
-async def delete_brand(brand_id: int, uow: UOWDep) -> None:
-    async with uow:
-        brand = await uow.brand.get_by_id(brand_id)
-
-        if brand is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Brand with id {brand_id} not found')
-
-        await uow.brand.delete(brand_id)
-        await uow.commit()
+async def delete_brand(brand_id: UUID, brand_service: BrandsServiceDep) -> None:
+    await brand_service.delete(brand_id)

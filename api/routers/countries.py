@@ -1,42 +1,43 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Query, HTTPException, status
 
-from api.dependencies import UOWDep
+from api.dependencies import CountryServiceDep
 from api.schemas.country import CountryRead
 
 
 router = APIRouter(prefix='/countries', tags=['Countries'])
 
 
-@router.get('/')
+@router.get('/', response_model=list[CountryRead])
 async def get_countries(
-        uow: UOWDep,
+        country_service: CountryServiceDep,
         limit: Annotated[int, Query(ge=1, le=100)] = 100,
         offset: Annotated[int, Query(ge=0)] = 0
-) -> list[CountryRead]:
-    async with uow:
-        countries = await uow.country.list(offset=offset, limit=limit)
-
-    return countries
+):
+    return await country_service.get_all(limit=limit, offset=offset)
 
 
-@router.get('/id/{country_id}')
-async def get_country_by_id(country_id: int, uow: UOWDep) -> CountryRead:
-    async with uow:
-        country = await uow.country.get_by_id(country_id)
-        if country is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Country with id {country_id} not found')
+@router.get('/id/{country_id}', response_model=CountryRead)
+async def get_country_by_id(country_id: UUID, country_service: CountryServiceDep):
+    country = await country_service.get_by_id(country_id)
+    if country is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Country with id {country_id} not found'
+        )
 
     return country
 
 
-@router.get('/code/{country_code}')
-async def get_country_by_code(country_code: str, uow: UOWDep) -> CountryRead:
-    async with uow:
-        country = await uow.country.get_by_code(country_code)
-        if country is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail=f'Country with code {country_code} not found')
+@router.get('/code/{country_code}', response_model=CountryRead)
+async def get_country_by_code(country_code: str, country_service: CountryServiceDep):
+    country = await country_service.get_by_code(country_code)
+    if country is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Country with code {country_code} not found'
+        )
 
     return country

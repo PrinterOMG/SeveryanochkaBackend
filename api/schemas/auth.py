@@ -1,15 +1,13 @@
+from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 from api.schemas.user import UserRead
 
 
-class TokenData(BaseModel):
-    user_id: int | None = None
-
-
-class Token(BaseModel):
+class TokenRead(BaseModel):
     access_token: str
-    token_type: str = Field(default='bearer')
+    token_type: str = 'bearer'
 
 
 class RegisterRequest(BaseModel):
@@ -22,7 +20,7 @@ class RegisterRequest(BaseModel):
 
 class RegisterResult(BaseModel):
     user: UserRead
-    token: Token
+    token: TokenRead
 
 
 class ResetPasswordRequest(BaseModel):

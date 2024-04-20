@@ -1,4 +1,5 @@
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -23,7 +24,7 @@ class ProductBase(BaseModel):
 
 
 class ProductRead(ProductBase):
-    id: int
+    id: UUID
 
     category: CategoryRead
     brand: BrandRead

@@ -1,33 +1,20 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Query, Depends, HTTPException, status
 
-from api.dependencies import UOWDep, current_user_id_admin
+from api.dependencies import current_user_id_admin, CategoryServiceDep
 from api.schemas.category import CategoryRead, CategoryCreate, CategoryUpdate
 from api.schemas.other import ErrorMessage
-from database.models import Category
+from core.exceptions.base import EntityNotFoundError
 
 
 router = APIRouter(prefix='/categories', tags=['Categories'])
 
 
-async def refresh_sub_categories(uow, category: Category, max_depth: int, cur_depth=0):
-    """
-    To limit the depth, the attribute 'child' is cleared, so it's better to call after commit if it occurs
-    """
-    if cur_depth >= max_depth:
-        await category.awaitable_attrs.child
-        category.child = []
-        return
-
-    for sub_category in await category.awaitable_attrs.child:
-        await uow.refresh(sub_category)
-        await refresh_sub_categories(uow, sub_category, max_depth, cur_depth + 1)
-
-
 @router.get('/')
 async def get_categories(
-        uow: UOWDep,
+        category_service: CategoryServiceDep,
         depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
 ) -> list[CategoryRead]:
     """
@@ -38,19 +25,13 @@ async def get_categories(
     If the `depth` for `child` of a certain category exceeds the passed `depth` parameter,
     then `child` of this category will not be received (`child` will be always an empty list)
     """
-    async with uow:
-        root_categories = await uow.category.list(parent_id=None)
-
-        for category in root_categories:
-            await refresh_sub_categories(uow, category, max_depth=depth)
-
-    return root_categories
+    return await category_service.get_root_categories(depth)
 
 
 @router.get('/{category_id}')
 async def get_category(
-        uow: UOWDep,
-        category_id: int,
+        category_service: CategoryServiceDep,
+        category_id: UUID,
         depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
 ) -> CategoryRead:
     """
@@ -61,14 +42,12 @@ async def get_category(
     If the `depth` for `child` of a certain category exceeds the passed `depth` parameter,
     then `child` of this category will not be received (`child` will be always an empty list)
     """
-    async with uow:
-        category = await uow.category.get_by_id(category_id)
-
-        if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail=f'Category with id {category_id} does not exist')
-
-        await refresh_sub_categories(uow, category, max_depth=depth)
+    category = await category_service.get_by_id(category_id, depth=depth)
+    if category is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Category with id {category_id} does not exist'
+        )
 
     return category
 
@@ -85,31 +64,19 @@ async def get_category(
         }
     }
 )
-async def create_category(uow: UOWDep, new_category: CategoryCreate) -> Category:
+async def create_category(category_service: CategoryServiceDep, new_category: CategoryCreate):
     """
     Create a new category. Categories can have the same names
 
     * Requires superuser privileges
     """
-    async with uow:
-        if new_category.parent_id is not None:
-            parent_category = await uow.category.get_by_id(new_category.parent_id)
-            if parent_category is None:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail=f'Category with id {new_category.parent_id} does not exist')
-
-        new_category = Category(**new_category.model_dump())
-        await uow.category.add(new_category)
-        await uow.commit()
-
-        await refresh_sub_categories(uow, new_category, max_depth=0)
-
-    return new_category
+    return await category_service.create(new_category)
 
 
-@router.patch(
+@router.put(
     '/{category_id}',
     dependencies=[Depends(current_user_id_admin)],
+    response_model=CategoryRead,
     responses={
         404: {
             'model': ErrorMessage,
@@ -121,37 +88,20 @@ async def create_category(uow: UOWDep, new_category: CategoryCreate) -> Category
         }
     }
 )
-async def update_category(uow: UOWDep, category_id: int, category_update: CategoryUpdate) -> CategoryRead:
+async def update_category(category_service: CategoryServiceDep, category_id: UUID, category_update: CategoryUpdate):
     """
     Update a category with provided `category_id`
 
     * Sub-categories depth is always 0, so child will be always empty list
     * Requires superuser privileges
     """
-    async with uow:
-        category = await uow.category.get_by_id(category_id)
-
-        if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail=f'Category with id {category_id} does not exist')
-
-        if category_update.parent_id is not None:
-            parent_category = await uow.category.get_by_id(category_update.parent_id)
-            if parent_category is None:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                    detail=f'Category with id {category_update.parent_id} does not exist')
-
-        update_data = category_update.model_dump(exclude_unset=True)
-
-        for field, value in update_data.items():
-            setattr(category, field, value)
-
-        await uow.category.update(category)
-        await uow.commit()
-
-        await refresh_sub_categories(uow, category, max_depth=0)  # Must be after commit!
-
-    return category
+    try:
+        return await category_service.update(category_id, category_update)
+    except EntityNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'Category with id {error.find_query} does not exist'
+        ) from error
 
 
 @router.delete(
@@ -165,18 +115,10 @@ async def update_category(uow: UOWDep, category_id: int, category_update: Catego
         }
     }
 )
-async def delete_category(uow: UOWDep, category_id: int) -> None:
+async def delete_category(category_service: CategoryServiceDep, category_id: UUID) -> None:
     """
     Delete category with provided `category_id`
 
     * Requires superuser privileges
     """
-    async with uow:
-        category = await uow.category.get_by_id(category_id)
-
-        if category is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail=f'Category with id {category_id} does not exist')
-
-        await uow.category.delete(category.id)
-        await uow.commit()
+    await category_service.delete(category_id)

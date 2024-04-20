@@ -6,4 +6,4 @@ from database.base import Base
 class Manufacturer(Base):
     __tablename__ = 'manufacturer'
 
-    name: Mapped[str] = mapped_column(nullable=False)
+    name: Mapped[str] = mapped_column()

@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class VerifyPhoneKey(BaseModel):
-    phone_key: str = Field(
+    key: str = Field(
         title='Phone key',
         description='Phone key that was '
     )

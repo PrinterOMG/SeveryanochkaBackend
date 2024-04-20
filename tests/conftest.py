@@ -13,7 +13,7 @@ from sqlalchemy.pool import NullPool
 from database.base import Base, get_async_session_factory
 from database.models import User, Country
 from main import app
-from utils.security import create_access_token
+from core.security import create_access_token
 
 
 pytest_plugins = ['tests.docker_services']

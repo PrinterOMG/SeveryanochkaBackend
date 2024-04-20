@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -7,4 +9,4 @@ class CountryBase(BaseModel):
 
 
 class CountryRead(CountryBase):
-    id: int
+    id: UUID

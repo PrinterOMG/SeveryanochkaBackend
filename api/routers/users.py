@@ -1,15 +1,12 @@
-import io
-import uuid
-from pathlib import Path
 from typing import Annotated
 
-from PIL import Image
 from fastapi import APIRouter, Depends, Query, status, HTTPException, UploadFile
-import aiofiles
 
-from api.dependencies import get_current_user, UOWDep
+from api.dependencies import get_current_user, UsersServiceDep
 from api.schemas.other import ErrorMessage
 from api.schemas.user import UserRead, UserCheckResult, UserUpdate, SetAvatarResult
+from core.exceptions.user import BirthdayCanBeChangedOnceError, BadAvatarResolutionError, BadAvatarSizeError, \
+    BadAvatarTypeError
 from database.models import User
 
 router = APIRouter(prefix='/users', tags=['Users'])
@@ -42,25 +39,26 @@ async def get_me(current_user: Annotated[User, Depends(get_current_user)]) -> Us
         }
     }
 )
-async def check_user(uow: UOWDep, phone: Annotated[str, Query(pattern=r'^\+7\d{10}$')]):
+async def check_user(user_service: UsersServiceDep, phone: Annotated[str, Query(pattern=r'^\+7\d{10}$')]):
     """
     Checks whether the user exists using the provided phone number
     """
-    async with uow:
-        user = await uow.users.get_by_phone(phone)
+    user = await user_service.get_by_phone(phone)
 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail='User with provided phone number not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User with provided phone number not found'
+        )
 
     return {'success': True}
 
 
-@router.patch(
+@router.put(
     '/me',
     responses={
         400: {
-            'description': 'Something bad... Check detail',
+            'description': 'Birthday can be changed just once',
             'model': ErrorMessage
         },
         401: {
@@ -72,7 +70,7 @@ async def check_user(uow: UOWDep, phone: Annotated[str, Query(pattern=r'^\+7\d{1
 async def update_me(
         *,
         current_user: Annotated[User, Depends(get_current_user)],
-        uow: UOWDep,
+        users_service: UsersServiceDep,
         user_update: UserUpdate
 ) -> UserRead:
     """
@@ -80,22 +78,15 @@ async def update_me(
 
     * Birthday can be changed just once
     """
-    update_data = user_update.model_dump(exclude_unset=True)
+    try:
+        user = await users_service.update(current_user, user_update)
+    except BirthdayCanBeChangedOnceError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Birthday can be changed just once'
+        ) from error
 
-    if not update_data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='At least one field is required')
-
-    if update_data.get('birthday') and current_user.birthday:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Birthday can be changed just once')
-
-    for field, value in update_data.items():
-        setattr(current_user, field, value)
-
-    async with uow:
-        current_user = await uow.users.update(current_user)
-        await uow.commit()
-
-    return current_user
+    return user
 
 
 @router.post(
@@ -108,83 +99,42 @@ async def update_me(
         }
     }
 )
-async def set_avatar(current_user: Annotated[User, Depends(get_current_user)], avatar: UploadFile, uow: UOWDep):
+async def set_avatar(
+        current_user: Annotated[User, Depends(get_current_user)],
+        avatar: UploadFile,
+        user_service: UsersServiceDep
+):
     """
     Upload a new avatar to current user
 
     Avatar requirements:
     * File must be an image file .png or .jpeg
     * Image size must be no more than 10 MB
-    * Image resolution should be no more than 400x400
+    * Image resolution should be no more than 1200x1200
 
     After adding a new avatar, the old one is completely deleted
     """
-    if avatar.size > 10 * 1024 * 1024:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Image size must be no more than 10 MB')
+    try:
+        avatar_url = await user_service.set_avatar(current_user=current_user, avatar=avatar)
+    except BadAvatarResolutionError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Image resolution should be no more than 400x400'
+        ) from error
+    except BadAvatarSizeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Image size must be no more than 10 MB'
+        ) from error
+    except BadAvatarTypeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='File must be an image file (.png or .jpeg)'
+        ) from error
 
-    if avatar.content_type not in ('image/jpeg', 'image/png'):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='File must be an image file (.png or .jpeg)')
-
-    file_bytes = io.BytesIO(await avatar.read())
-    image = Image.open(file_bytes)
-    width, height = image.size
-    if width >= 400 or height >= 400:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Image resolution should be no more than 400x400')
-
-    output_directory = Path(f'static/users/{current_user.id}')
-    output_directory.mkdir(exist_ok=True)
-
-    extension = avatar.filename.split('.')[-1]
-    random_str = str(uuid.uuid4()).replace('-', '')[:4]
-    filename = f'avatar-{random_str}.{extension}'
-    path_to_avatar = output_directory / filename
-
-    async with aiofiles.open(path_to_avatar, mode='wb') as file:
-        await file.write(file_bytes.getbuffer())
-
-    old_avatar = current_user.avatar_url
-    current_user.avatar_url = str(path_to_avatar)
-
-    async with uow:
-        await uow.users.update(current_user)
-        await uow.commit()
-
-    if old_avatar is not None:
-        Path(old_avatar).unlink(missing_ok=True)
-
-    return SetAvatarResult(avatar_url=current_user.avatar_url)
+    return SetAvatarResult(avatar_url=avatar_url)
 
 
 @router.delete('/me/avatar', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_avatar(current_user: Annotated[User, Depends(get_current_user)], uow: UOWDep):
-    if current_user.avatar_url is None:
-        return
-
-    Path(current_user.avatar_url).unlink(missing_ok=True)
-    current_user.avatar_url = None
-
-    async with uow:
-        await uow.users.update(current_user)
-        await uow.commit()
-
-
-@router.delete(
-    '/me',
-    responses={
-        401: {
-            'description': 'Auth error',
-            'model': ErrorMessage
-        }
-    },
-    status_code=status.HTTP_204_NO_CONTENT
-)
-async def delete_me(current_user: Annotated[User, Depends(get_current_user)], uow: UOWDep):
-    """
-    Completely deletes current user
-    """
-    async with uow:
-        await uow.users.delete(current_user.id)
-        await uow.commit()
+async def delete_avatar(current_user: Annotated[User, Depends(get_current_user)], user_service: UsersServiceDep):
+    await user_service.delete_avatar(current_user)

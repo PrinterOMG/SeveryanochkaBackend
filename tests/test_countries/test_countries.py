@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from sqlalchemy import select
 
@@ -28,7 +30,7 @@ async def test_get_countries(offset, limit):
 
     for country in db_countries[offset:offset + limit]:
         country_data = {
-            'id': country.id,
+            'id': str(country.id),
             'code': country.code,
             'name': country.name
         }
@@ -38,7 +40,8 @@ async def test_get_countries(offset, limit):
 
 async def test_get_country_by_id():
     async with async_session_maker() as session:
-        db_country = await session.get(Country, 1)
+        stmt = select(Country).limit(1)
+        db_country = await session.scalar(stmt)
 
     response = client.get(f'{API_PREFIX}/id/{db_country.id}')
 
@@ -46,20 +49,21 @@ async def test_get_country_by_id():
 
     country = response.json()
 
-    assert country['id'] == db_country.id
+    assert country['id'] == str(db_country.id)
     assert country['name'] == db_country.name
     assert country['code'] == db_country.code
 
 
 async def test_get_country_by_bad_id():
-    response = client.get(f'{API_PREFIX}/id/9999')
+    response = client.get(f'{API_PREFIX}/id/{uuid.uuid4()}')
 
     assert response.status_code == 404, response.status_code
 
 
 async def test_get_country_by_code():
     async with async_session_maker() as session:
-        db_country = await session.get(Country, 1)
+        stmt = select(Country).limit(1)
+        db_country = await session.scalar(stmt)
 
     response = client.get(f'{API_PREFIX}/code/{db_country.code}')
 
@@ -67,7 +71,7 @@ async def test_get_country_by_code():
 
     country = response.json()
 
-    assert country['id'] == db_country.id
+    assert country['id'] == str(db_country.id)
     assert country['name'] == db_country.name
     assert country['code'] == db_country.code
 

@@ -3,15 +3,19 @@ import gettext
 from logging.config import fileConfig
 
 import pycountry
+from asyncpg import UndefinedTableError
 from sqlalchemy import pool, insert, select, func
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.ext.asyncio import async_engine_from_config, AsyncEngine
 
 from alembic import context
 
 from database.base import Base
 from database.models import Country
-from config import settings
+from config import get_settings
+
+settings = get_settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -66,6 +70,27 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 
+async def insert_default_countries(connectable: AsyncEngine) -> None:
+    async with connectable.connect() as connection:
+        stmt = select(func.count()).select_from(Country)
+        try:
+            result = await connection.scalar(stmt)
+        except ProgrammingError:
+            return
+
+    if result == 0:
+        russian = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=['ru'])
+
+        countries = list()
+        for country in pycountry.countries:
+            countries.append({'name': russian.gettext(country.name), 'code': country.alpha_2})
+
+        async with connectable.connect() as connection:
+            stmt = insert(Country).values(countries)
+            await connection.execute(stmt)
+            await connection.commit()
+
+
 async def run_async_migrations() -> None:
     """In this scenario we need to create an Engine
     and associate a connection with the context.
@@ -81,21 +106,7 @@ async def run_async_migrations() -> None:
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
 
-    async with connectable.connect() as connection:
-        stmt = select(func.count()).select_from(Country)
-        result = await connection.scalar(stmt)
-
-    if result == 0:
-        russian = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=['ru'])
-
-        countries = list()
-        for country in pycountry.countries:
-            countries.append({'name': russian.gettext(country.name), 'code': country.alpha_2})
-
-        async with connectable.connect() as connection:
-            stmt = insert(Country).values(countries)
-            await connection.execute(stmt)
-            await connection.commit()
+    await insert_default_countries(connectable)
 
     await connectable.dispose()
 

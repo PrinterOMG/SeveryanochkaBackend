@@ -1,19 +1,26 @@
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncAttrs
+import uuid
+from typing import Annotated
+from uuid import UUID
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncAttrs, AsyncEngine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-import sqlalchemy as sa
 
-from config import settings
-
-engine = create_async_engine(settings.database_url)
-async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
+from config import get_settings, Settings
 
 
 class Base(AsyncAttrs, DeclarativeBase):
-    id: Mapped[int] = mapped_column(sa.BigInteger, primary_key=True, autoincrement=True)
-
-    def to_dict(self) -> dict:
-        return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
 
 
-async def get_async_session_factory() -> async_sessionmaker:
-    return async_session_maker
+async def get_async_engine(settings: Annotated[Settings, Depends(get_settings)]):
+    return create_async_engine(settings.database_url)
+
+
+async def get_async_session_factory(engine: Annotated[AsyncEngine, Depends(get_async_engine)]) -> async_sessionmaker:
+    return async_sessionmaker(engine, expire_on_commit=False)
+
+
+async def get_async_session(async_session_factory: Annotated[async_sessionmaker, Depends(get_async_session_factory)]):
+    async with async_session_factory() as session:
+        yield session

@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -8,7 +9,7 @@ class BrandBase(BaseModel):
 
 
 class BrandRead(BrandBase):
-    id: int
+    id: UUID
 
 
 class BrandCreate(BrandBase):

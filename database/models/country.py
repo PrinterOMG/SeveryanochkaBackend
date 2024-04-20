@@ -7,5 +7,5 @@ from database.base import Base
 class Country(Base):
     __tablename__ = 'country'
 
-    code: Mapped[str] = mapped_column(sa.String(2), index=True, nullable=False)
-    name: Mapped[str] = mapped_column(nullable=False)
+    code: Mapped[str] = mapped_column(sa.String(2), index=True)
+    name: Mapped[str] = mapped_column()
