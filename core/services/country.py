@@ -3,14 +3,10 @@ from uuid import UUID
 
 from core.entities.country import CountryEntity
 from core.repositories.country import CountryRepositoryBase
-from core.unit_of_work import UnitOfWorkBase
 
 
 class CountryServiceBase(ABC):
-    def __init__(
-            self,
-            country_repository: CountryRepositoryBase
-    ):
+    def __init__(self, country_repository: CountryRepositoryBase):
         self.country_repository = country_repository
 
     @abstractmethod
@@ -27,7 +23,6 @@ class CountryServiceBase(ABC):
 
 
 class CountryService(CountryServiceBase):
-
     async def get_all(self, limit: int, offset: int) -> list[CountryEntity]:
         return await self.country_repository.list(limit=limit, offset=offset)
 

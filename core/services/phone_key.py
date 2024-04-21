@@ -3,16 +3,20 @@ from abc import abstractmethod, ABC
 from datetime import datetime, timedelta
 
 from core.entities.phone_key import PhoneKeyEntity
-from core.exceptions.phone_key import PhoneKeyCreateLimitError, BadPhoneKeyError, BadConfirmationCodeError
+from core.exceptions.phone_key import (
+    PhoneKeyCreateLimitError,
+    BadPhoneKeyError,
+    BadConfirmationCodeError,
+)
 from core.repositories.phone_key import PhoneKeyRepositoryBase
 from core.unit_of_work import UnitOfWorkBase
 
 
 class PhoneKeyServiceBase(ABC):
     def __init__(
-            self,
-            phone_key_repository: PhoneKeyRepositoryBase,
-            uow: UnitOfWorkBase,
+        self,
+        phone_key_repository: PhoneKeyRepositoryBase,
+        uow: UnitOfWorkBase,
     ):
         self.phone_key_repository = phone_key_repository
         self.uow = uow
@@ -74,11 +78,7 @@ class PhoneKeyService(PhoneKeyServiceBase):
 
         key = str(uuid.uuid4())  # Получение ключа от стороннего сервиса
         expire_date = datetime.utcnow() + timedelta(minutes=15)
-        phone_key = PhoneKeyEntity(
-            key=key,
-            phone=phone,
-            expires_at=expire_date
-        )
+        phone_key = PhoneKeyEntity(key=key, phone=phone, expires_at=expire_date)
         await self.phone_key_repository.add(phone_key)
         await self.uow.commit()
 
@@ -87,7 +87,11 @@ class PhoneKeyService(PhoneKeyServiceBase):
     async def verify(self, key: str, code: str) -> PhoneKeyEntity:
         phone_key = await self.phone_key_repository.get_by_key(key)
 
-        if phone_key is None or phone_key.expires_at < datetime.utcnow() or phone_key.is_verified:
+        if (
+            phone_key is None
+            or phone_key.expires_at < datetime.utcnow()
+            or phone_key.is_verified
+        ):
             raise BadPhoneKeyError
 
         is_correct_code = code == '0000'  # Проверка кода через сторонний сервис

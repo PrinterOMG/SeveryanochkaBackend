@@ -22,4 +22,8 @@ class PhoneKey(Base):
 
     @property
     def is_active(self):
-        return self.is_verified and (not self.is_used) and self.expires_at > datetime.utcnow()
+        return (
+            self.is_verified
+            and (not self.is_used)
+            and self.expires_at > datetime.utcnow()
+        )

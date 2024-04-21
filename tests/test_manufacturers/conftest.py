@@ -17,4 +17,6 @@ async def prepared_manufacturers():
     yield manufacturers
 
     async with async_session_maker.begin() as session:
-        await session.execute(text(f'TRUNCATE TABLE {Manufacturer.__tablename__} CASCADE;'))
+        await session.execute(
+            text(f'TRUNCATE TABLE {Manufacturer.__tablename__} CASCADE;')
+        )

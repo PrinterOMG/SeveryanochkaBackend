@@ -38,7 +38,9 @@ class SAPhoneKeyRepository(GenericSARepository, PhoneKeyRepositoryBase):
 
     async def get_last_hour_keys_by_phone(self, phone: str) -> list[PhoneKeyEntity]:
         hour_ago_date = datetime.utcnow() - timedelta(hours=1)
-        stmt = select(PhoneKey).where(PhoneKey.phone == phone, PhoneKey.created_at > hour_ago_date)
+        stmt = select(PhoneKey).where(
+            PhoneKey.phone == phone, PhoneKey.created_at > hour_ago_date
+        )
         records = await self._session.scalars(stmt)
 
         return [PhoneKeyEntity.model_validate(record) for record in records]
@@ -47,10 +49,7 @@ class SAPhoneKeyRepository(GenericSARepository, PhoneKeyRepositoryBase):
         stmt = (
             update(PhoneKey)
             .where(PhoneKey.key == key)
-            .values(
-                is_used=True,
-                used_at=datetime.utcnow()
-            )
+            .values(is_used=True, used_at=datetime.utcnow())
             .returning(PhoneKey)
         )
 

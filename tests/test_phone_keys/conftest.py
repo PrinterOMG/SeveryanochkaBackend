@@ -12,7 +12,7 @@ async def prepared_phone_key(expires_at: datetime, is_verified: bool) -> PhoneKe
         key='test_key',
         phone='+79307229334',
         expires_at=expires_at,
-        is_verified=is_verified
+        is_verified=is_verified,
     )
 
     async with async_session_maker.begin() as session:

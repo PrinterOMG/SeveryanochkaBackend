@@ -7,5 +7,11 @@ from .manufacturer import Manufacturer
 from .country import Country
 
 __all__ = (
-    'User', 'PhoneKey', 'Category', 'Brand', 'Product', 'Manufacturer', 'Country',
+    'User',
+    'PhoneKey',
+    'Category',
+    'Brand',
+    'Product',
+    'Manufacturer',
+    'Country',
 )

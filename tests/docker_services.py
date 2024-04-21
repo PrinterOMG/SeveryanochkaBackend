@@ -13,7 +13,7 @@ async def postgres_responsive(host: str) -> bool:
             port=5432,
             user='test',
             database='test',
-            password='secret-password'
+            password='secret-password',
         )
     except (ConnectionError, asyncpg.CannotConnectNowError):
         return False
@@ -44,8 +44,5 @@ async def async_wait_until_responsive(
 @pytest.fixture(scope='session')
 async def postgres_service(docker_services):
     await async_wait_until_responsive(
-        timeout=30,
-        pause=0.1,
-        check=postgres_responsive,
-        host='localhost'
+        timeout=30, pause=0.1, check=postgres_responsive, host='localhost'
     )

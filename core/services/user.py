@@ -10,17 +10,21 @@ from fastapi import UploadFile
 
 from api.schemas.user import UserUpdate
 from core.entities.user import UserEntity
-from core.exceptions.user import BirthdayCanBeChangedOnceError, BadAvatarSizeError, BadAvatarTypeError, \
-    BadAvatarResolutionError
+from core.exceptions.user import (
+    BirthdayCanBeChangedOnceError,
+    BadAvatarSizeError,
+    BadAvatarTypeError,
+    BadAvatarResolutionError,
+)
 from core.repositories.user import UserRepositoryBase
 from core.unit_of_work import UnitOfWorkBase
 
 
 class UserServiceBase(ABC):
     def __init__(
-            self,
-            user_repository: UserRepositoryBase,
-            uow: UnitOfWorkBase,
+        self,
+        user_repository: UserRepositoryBase,
+        uow: UnitOfWorkBase,
     ):
         self._users_repository = user_repository
         self._uow = uow
@@ -37,7 +41,9 @@ class UserServiceBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def update(self, current_user: UserEntity, update_data: UserUpdate) -> UserEntity:
+    async def update(
+        self, current_user: UserEntity, update_data: UserUpdate
+    ) -> UserEntity:
         raise NotImplementedError
 
     @abstractmethod
@@ -58,8 +64,13 @@ class UserServiceBase(ABC):
 
 
 class UserService(UserServiceBase):
-    async def update(self, current_user: UserEntity, update_data: UserUpdate) -> UserEntity:
-        if current_user.birthday is not None and current_user.birthday != update_data.birthday:
+    async def update(
+        self, current_user: UserEntity, update_data: UserUpdate
+    ) -> UserEntity:
+        if (
+            current_user.birthday is not None
+            and current_user.birthday != update_data.birthday
+        ):
             raise BirthdayCanBeChangedOnceError
 
         current_user.birthday = update_data.birthday
@@ -72,9 +83,7 @@ class UserService(UserServiceBase):
 
     async def create(self, phone: str, hashed_password: str) -> UserEntity:
         new_user = UserEntity(
-            phone=phone,
-            hashed_password=hashed_password,
-            is_superuser=False
+            phone=phone, hashed_password=hashed_password, is_superuser=False
         )
 
         await self._users_repository.add(new_user)

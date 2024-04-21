@@ -3,16 +3,15 @@ from uuid import UUID
 
 from api.schemas.brand import BrandCreate, BrandUpdate
 from core.entities.brand import BrandEntity
-from core.repositories.brand import SABrandRepository, BrandRepositoryBase
+from core.repositories.brand import BrandRepositoryBase
 from core.unit_of_work import UnitOfWorkBase
-from database.models import Brand
 
 
 class BrandServiceBase(ABC):
     def __init__(
-            self,
-            brand_repository: BrandRepositoryBase,
-            uow: UnitOfWorkBase,
+        self,
+        brand_repository: BrandRepositoryBase,
+        uow: UnitOfWorkBase,
     ):
         self.brand_repository = brand_repository
         self.uow = uow

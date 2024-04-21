@@ -13,7 +13,7 @@ BAD_PHONES = [
     '123',
     '+123-456-7890',
     '+7111111111111',
-    '+89307229334'
+    '+89307229334',
 ]
 
 API_PREFIX = '/phone_keys'
@@ -21,9 +21,7 @@ API_PREFIX = '/phone_keys'
 
 @pytest.mark.parametrize('phone', BAD_PHONES)
 async def test_create_bad_phone(phone: str):
-    body = {
-        'phone': phone
-    }
+    body = {'phone': phone}
 
     response = client.post(f'{API_PREFIX}', json=body)
 
@@ -49,9 +47,7 @@ async def test_create_rate_limit():
 
 
 async def test_create_success():
-    body = {
-        'phone': '+79307229334'
-    }
+    body = {'phone': '+79307229334'}
 
     response = client.post(f'{API_PREFIX}', json=body)
     assert response.status_code == 201, response.text
@@ -69,16 +65,11 @@ async def test_create_success():
 
 @pytest.mark.parametrize(
     'expires_at, is_verified',
-    [
-        (datetime.utcnow() + timedelta(minutes=15), False)
-    ],
-    ids=['Not verified and not expired']
+    [(datetime.utcnow() + timedelta(minutes=15), False)],
+    ids=['Not verified and not expired'],
 )
 async def test_verify_success(prepared_phone_key: PhoneKey):
-    body = {
-        'key': prepared_phone_key.key,
-        'code': '0000'
-    }
+    body = {'key': prepared_phone_key.key, 'code': '0000'}
 
     response = client.post(f'{API_PREFIX}/verify', json=body)
 
@@ -95,16 +86,11 @@ async def test_verify_success(prepared_phone_key: PhoneKey):
 
 @pytest.mark.parametrize(
     'expires_at, is_verified',
-    [
-        (datetime.utcnow() + timedelta(minutes=15), False)
-    ],
-    ids=['Not verified and not expired']
+    [(datetime.utcnow() + timedelta(minutes=15), False)],
+    ids=['Not verified and not expired'],
 )
 async def test_verify_bad_code(prepared_phone_key: PhoneKey):
-    body = {
-        'key': prepared_phone_key.key,
-        'code': '1111'
-    }
+    body = {'key': prepared_phone_key.key, 'code': '1111'}
 
     response = client.post(f'{API_PREFIX}/verify', json=body)
 
@@ -116,10 +102,7 @@ async def test_verify_bad_code(prepared_phone_key: PhoneKey):
 
 
 async def test_verify_invalid_phone_key():
-    body = {
-        'key': 'invalid_key',
-        'code': '0000'
-    }
+    body = {'key': 'invalid_key', 'code': '0000'}
 
     response = client.post(f'{API_PREFIX}/verify', json=body)
 
@@ -131,19 +114,12 @@ async def test_verify_invalid_phone_key():
     [
         (datetime.utcnow() + timedelta(minutes=15), True),
         (datetime.utcnow() - timedelta(minutes=15), False),
-        (datetime.utcnow() - timedelta(minutes=15), True)
+        (datetime.utcnow() - timedelta(minutes=15), True),
     ],
-    ids=[
-        'Verified, not expired',
-        'Not verified, expired',
-        'Verified, expired'
-    ]
+    ids=['Verified, not expired', 'Not verified, expired', 'Verified, expired'],
 )
 async def test_verify_bad_phone_key(prepared_phone_key: PhoneKey):
-    body = {
-        'key': prepared_phone_key.key,
-        'code': '0000'
-    }
+    body = {'key': prepared_phone_key.key, 'code': '0000'}
 
     response = client.post(f'{API_PREFIX}/verify', json=body)
 
@@ -152,12 +128,8 @@ async def test_verify_bad_phone_key(prepared_phone_key: PhoneKey):
 
 @pytest.mark.parametrize(
     'expires_at, is_verified',
-    [
-        (datetime.utcnow() + timedelta(minutes=15), False)
-    ],
-    ids=[
-        'Not verified, not expired'
-    ]
+    [(datetime.utcnow() + timedelta(minutes=15), False)],
+    ids=['Not verified, not expired'],
 )
 async def test_get_success(prepared_phone_key: PhoneKey):
     response = client.get(f'{API_PREFIX}/{prepared_phone_key.key}')

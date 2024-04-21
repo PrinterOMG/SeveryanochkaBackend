@@ -9,9 +9,9 @@ from core.unit_of_work import UnitOfWorkBase
 
 class ManufacturerServiceBase(ABC):
     def __init__(
-            self,
-            manufacturer_repository: ManufacturerRepositoryBase,
-            uow: UnitOfWorkBase,
+        self,
+        manufacturer_repository: ManufacturerRepositoryBase,
+        uow: UnitOfWorkBase,
     ):
         self.manufacturer_repository = manufacturer_repository
         self.uow = uow
@@ -29,7 +29,9 @@ class ManufacturerServiceBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    async def update(self, manufacturer_id: UUID, update_data: ManufacturerUpdate) -> ManufacturerEntity:
+    async def update(
+        self, manufacturer_id: UUID, update_data: ManufacturerUpdate
+    ) -> ManufacturerEntity:
         raise NotImplementedError
 
     @abstractmethod
@@ -47,7 +49,9 @@ class ManufacturerService(ManufacturerServiceBase):
         await self.uow.commit()
         return new_manufacturer
 
-    async def update(self, manufacturer_id: UUID, update_data: ManufacturerUpdate) -> ManufacturerEntity:
+    async def update(
+        self, manufacturer_id: UUID, update_data: ManufacturerUpdate
+    ) -> ManufacturerEntity:
         entity = ManufacturerEntity(id=manufacturer_id, **update_data.model_dump())
         manufacturer = await self.manufacturer_repository.update(entity)
         await self.uow.commit()

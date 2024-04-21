@@ -3,7 +3,6 @@ import gettext
 from logging.config import fileConfig
 
 import pycountry
-from asyncpg import UndefinedTableError
 from sqlalchemy import pool, insert, select, func
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import ProgrammingError
@@ -51,12 +50,12 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option('sqlalchemy.url')
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
+        dialect_opts={'paramstyle': 'named'},
     )
 
     with context.begin_transaction():
@@ -79,11 +78,15 @@ async def insert_default_countries(connectable: AsyncEngine) -> None:
             return
 
     if result == 0:
-        russian = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=['ru'])
+        russian = gettext.translation(
+            'iso3166-1', pycountry.LOCALES_DIR, languages=['ru']
+        )
 
         countries = list()
         for country in pycountry.countries:
-            countries.append({'name': russian.gettext(country.name), 'code': country.alpha_2})
+            countries.append(
+                {'name': russian.gettext(country.name), 'code': country.alpha_2}
+            )
 
         async with connectable.connect() as connection:
             stmt = insert(Country).values(countries)
@@ -99,7 +102,7 @@ async def run_async_migrations() -> None:
 
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+        prefix='sqlalchemy.',
         poolclass=pool.NullPool,
     )
 

@@ -10,12 +10,7 @@ from tests.conftest import client, async_session_maker
 API_PREFIX = '/countries'
 
 
-@pytest.mark.parametrize(
-    'offset, limit',
-    [
-        (0, 1), (0, 100), (20, 20)
-    ]
-)
+@pytest.mark.parametrize('offset, limit', [(0, 1), (0, 100), (20, 20)])
 async def test_get_countries(offset, limit):
     async with async_session_maker() as session:
         stmt = select(Country)
@@ -28,11 +23,11 @@ async def test_get_countries(offset, limit):
 
     countries = response.json()
 
-    for country in db_countries[offset:offset + limit]:
+    for country in db_countries[offset : offset + limit]:
         country_data = {
             'id': str(country.id),
             'code': country.code,
-            'name': country.name
+            'name': country.name,
         }
 
         assert country_data in countries

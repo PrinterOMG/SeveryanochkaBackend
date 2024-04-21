@@ -21,13 +21,13 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
     responses={
         400: {
             'description': 'Provided phone key is expired, invalid or used',
-            'model': ErrorMessage
+            'model': ErrorMessage,
         },
         409: {
             'description': 'User with provided phone number already exists',
-            'model': ErrorMessage
-        }
-    }
+            'model': ErrorMessage,
+        },
+    },
 )
 async def register(request: RegisterRequest, auth_service: AuthServiceDep):
     """
@@ -40,12 +40,12 @@ async def register(request: RegisterRequest, auth_service: AuthServiceDep):
     except BadPhoneKeyError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Key is expired, invalid or used'
+            detail='Key is expired, invalid or used',
         ) from error
     except EntityAlreadyExistsError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail='User with provided phone number already exists'
+            detail='User with provided phone number already exists',
         ) from error
 
     return token
@@ -54,16 +54,11 @@ async def register(request: RegisterRequest, auth_service: AuthServiceDep):
 @router.post(
     '/login',
     response_model=TokenRead,
-    responses={
-        401: {
-            'description': 'Incorrect credentials',
-            'model': ErrorMessage
-        }
-    }
+    responses={401: {'description': 'Incorrect credentials', 'model': ErrorMessage}},
 )
 async def login(
-        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-        auth_service: AuthServiceDep
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    auth_service: AuthServiceDep,
 ):
     exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -85,13 +80,13 @@ async def login(
     responses={
         401: {
             'description': 'Phone key is expired, invalid or used',
-            'model': ErrorMessage
+            'model': ErrorMessage,
         },
         400: {
             'description': 'User with provided phone does not exists',
-            'model': ErrorMessage
-        }
-    }
+            'model': ErrorMessage,
+        },
+    },
 )
 async def reset_password(request: ResetPasswordRequest, auth_service: AuthServiceDep):
     try:
@@ -99,10 +94,10 @@ async def reset_password(request: ResetPasswordRequest, auth_service: AuthServic
     except BadPhoneKeyError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Key is expired, invalid or used'
+            detail='Key is expired, invalid or used',
         ) from error
     except EntityNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='User with provided phone does not exists'
+            detail='User with provided phone does not exists',
         ) from error

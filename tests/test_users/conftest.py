@@ -10,12 +10,12 @@ from tests.conftest import async_session_maker
 
 @pytest.fixture(scope='function')
 async def prepared_user(
-        phone: str,
-        hashed_password: str,
-        first_name: str,
-        last_name: str,
-        birthday: date,
-        is_superuser: bool
+    phone: str,
+    hashed_password: str,
+    first_name: str,
+    last_name: str,
+    birthday: date,
+    is_superuser: bool,
 ) -> User:
     new_user = User(
         phone=phone,
@@ -23,7 +23,7 @@ async def prepared_user(
         first_name=first_name,
         last_name=last_name,
         birthday=birthday,
-        is_superuser=is_superuser
+        is_superuser=is_superuser,
     )
 
     async with async_session_maker.begin() as session:

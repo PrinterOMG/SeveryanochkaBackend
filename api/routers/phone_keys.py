@@ -5,7 +5,11 @@ from fastapi import APIRouter, Path, HTTPException, status
 from api.dependencies import PhoneKeyServiceDep
 from api.schemas.other import ErrorMessage
 from api.schemas.phone_key import PhoneKeyRead, CreatePhoneKey, VerifyPhoneKey
-from core.exceptions.phone_key import PhoneKeyCreateLimitError, BadPhoneKeyError, BadConfirmationCodeError
+from core.exceptions.phone_key import (
+    PhoneKeyCreateLimitError,
+    BadPhoneKeyError,
+    BadConfirmationCodeError,
+)
 
 router = APIRouter(prefix='/phone_keys', tags=['Phone verification key'])
 
@@ -13,21 +17,18 @@ router = APIRouter(prefix='/phone_keys', tags=['Phone verification key'])
 @router.get(
     '/{key}',
     response_model=PhoneKeyRead,
-    responses={
-        404: {
-            'description': 'Key not found',
-            'model': ErrorMessage
-        }
-    }
+    responses={404: {'description': 'Key not found', 'model': ErrorMessage}},
 )
 async def get_phone_key(
-        key: Annotated[str, Path(title='Key', description='Key')],
-        phone_key_service: PhoneKeyServiceDep
+    key: Annotated[str, Path(title='Key', description='Key')],
+    phone_key_service: PhoneKeyServiceDep,
 ):
     phone_key = await phone_key_service.get_by_key(key)
 
     if phone_key is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Key is invalid')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Key is invalid'
+        )
 
     return phone_key
 
@@ -39,15 +40,14 @@ async def get_phone_key(
     responses={
         429: {
             'description': 'Too many create requests (limit is 3 per hour)',
-            'model': ErrorMessage
+            'model': ErrorMessage,
         },
-        530: {
-            'description': 'SMS service unavailable',
-            'model': ErrorMessage
-        }
-    }
+        530: {'description': 'SMS service unavailable', 'model': ErrorMessage},
+    },
 )
-async def create_phone_key(request: CreatePhoneKey, phone_key_service: PhoneKeyServiceDep):
+async def create_phone_key(
+    request: CreatePhoneKey, phone_key_service: PhoneKeyServiceDep
+):
     """
     Creates a key for requests with a phone number confirmation.
 
@@ -63,7 +63,7 @@ async def create_phone_key(request: CreatePhoneKey, phone_key_service: PhoneKeyS
     except PhoneKeyCreateLimitError as error:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail='The request limit (3 per hour) for this number has been exceeded'
+            detail='The request limit (3 per hour) for this number has been exceeded',
         ) from error
 
     return phone_key
@@ -74,15 +74,14 @@ async def create_phone_key(request: CreatePhoneKey, phone_key_service: PhoneKeyS
     responses={
         400: {
             'description': 'Key is expired, invalid or already exists',
-            'model': ErrorMessage
+            'model': ErrorMessage,
         },
-        401: {
-            'description': 'Confirmation code is invalid',
-            'model': ErrorMessage
-        }
-    }
+        401: {'description': 'Confirmation code is invalid', 'model': ErrorMessage},
+    },
 )
-async def verify_phone_key(request: VerifyPhoneKey, phone_key_service: PhoneKeyServiceDep) -> PhoneKeyRead:
+async def verify_phone_key(
+    request: VerifyPhoneKey, phone_key_service: PhoneKeyServiceDep
+) -> PhoneKeyRead:
     """
     Verifies the phone key so that you can then use it to perform an operation like registration or password reset
 
@@ -95,12 +94,12 @@ async def verify_phone_key(request: VerifyPhoneKey, phone_key_service: PhoneKeyS
     except BadPhoneKeyError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Key is expired, invalid or already verified'
+            detail='Key is expired, invalid or already verified',
         ) from error
     except BadConfirmationCodeError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f'Confirmation code {error.confirmation_code} is invalid'
+            detail=f'Confirmation code {error.confirmation_code} is invalid',
         ) from error
 
     return phone_key

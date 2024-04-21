@@ -9,9 +9,9 @@ from core.unit_of_work import UnitOfWorkBase
 
 class CategoryServiceBase(ABC):
     def __init__(
-            self,
-            category_repository: CategoryRepositoryBase,
-            uow: UnitOfWorkBase,
+        self,
+        category_repository: CategoryRepositoryBase,
+        uow: UnitOfWorkBase,
     ):
         self.category_repository = category_repository
         self.uow = uow
@@ -46,8 +46,7 @@ class CategoryService(CategoryServiceBase):
 
     async def update(self, category_id: UUID, data: CategoryUpdate) -> CategoryEntity:
         category = await self.category_repository.update(
-            CategoryEntity(id=category_id, **data.model_dump()),
-            depth=0
+            CategoryEntity(id=category_id, **data.model_dump()), depth=0
         )
         await self.uow.commit()
         return category

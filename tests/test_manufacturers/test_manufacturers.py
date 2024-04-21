@@ -10,12 +10,7 @@ from tests.conftest import client, async_session_maker
 API_PREFIX = '/test_manufacturers'
 
 
-@pytest.mark.parametrize(
-    'limit, offset',
-    [
-        (1, 0), (20, 0), (10, 10), (10, 40)
-    ]
-)
+@pytest.mark.parametrize('limit, offset', [(1, 0), (20, 0), (10, 10), (10, 40)])
 def test_get_manufacturers(prepared_manufacturers: list[Manufacturer], limit, offset):
     response = client.get(f'{API_PREFIX}?limit={limit}&offset={offset}')
 
@@ -23,11 +18,8 @@ def test_get_manufacturers(prepared_manufacturers: list[Manufacturer], limit, of
 
     manufacturers = response.json()
 
-    for manufacturer in prepared_manufacturers[offset:offset + limit]:
-        manufacturer_data = {
-            'id': str(manufacturer.id),
-            'name': manufacturer.name
-        }
+    for manufacturer in prepared_manufacturers[offset : offset + limit]:
+        manufacturer_data = {'id': str(manufacturer.id), 'name': manufacturer.name}
 
         assert manufacturer_data in manufacturers
 
@@ -52,9 +44,7 @@ async def test_get_bad_manufacturer():
 
 
 async def test_create_manufacturer(superuser_client: AsyncClient):
-    body = {
-        'name': 'manufacturer 123'
-    }
+    body = {'name': 'manufacturer 123'}
 
     response = await superuser_client.post(API_PREFIX, json=body)
 
@@ -70,26 +60,23 @@ async def test_create_manufacturer(superuser_client: AsyncClient):
     assert db_manufacturer.name == body['name']
 
 
-@pytest.mark.parametrize(
-    'body',
-    [
-        {'name': 'ab'}, {}, {'extra': 123}
-    ]
-)
+@pytest.mark.parametrize('body', [{'name': 'ab'}, {}, {'extra': 123}])
 async def test_create_manufacturer_bad_body(body: dict, superuser_client: AsyncClient):
     response = await superuser_client.post(API_PREFIX, json=body)
 
     assert response.status_code == 422, response.status_code
 
 
-async def test_update_manufacturer(prepared_manufacturers: list[Manufacturer], superuser_client: AsyncClient):
+async def test_update_manufacturer(
+    prepared_manufacturers: list[Manufacturer], superuser_client: AsyncClient
+):
     prepared_manufacturer = prepared_manufacturers[0]
 
-    body = {
-        'name': 'test manufacturer'
-    }
+    body = {'name': 'test manufacturer'}
 
-    response = await superuser_client.put(f'{API_PREFIX}/{prepared_manufacturer.id}', json=body)
+    response = await superuser_client.put(
+        f'{API_PREFIX}/{prepared_manufacturer.id}', json=body
+    )
 
     assert response.status_code == 200, response.status_code
 
@@ -100,34 +87,38 @@ async def test_update_manufacturer(prepared_manufacturers: list[Manufacturer], s
 
     assert db_manufacturer is not None
 
-    assert manufacturer['name'] == body['name'] and manufacturer['name'] == db_manufacturer.name
+    assert (
+        manufacturer['name'] == body['name']
+        and manufacturer['name'] == db_manufacturer.name
+    )
 
 
 async def test_update_bad_manufacturer(superuser_client: AsyncClient):
-    body = {
-        'name': 'test manufacturer'
-    }
+    body = {'name': 'test manufacturer'}
 
     response = await superuser_client.put(f'{API_PREFIX}/{uuid.uuid4()}', json=body)
 
     assert response.status_code == 404, response.status_code
 
 
-@pytest.mark.parametrize(
-    'body',
-    [
-        {'name': 'ab'}, {}, {'extra': '123'}
-    ]
-)
-async def test_update_manufacturer_bad_body(prepared_manufacturers: list[Manufacturer], body: dict, superuser_client: AsyncClient):
+@pytest.mark.parametrize('body', [{'name': 'ab'}, {}, {'extra': '123'}])
+async def test_update_manufacturer_bad_body(
+    prepared_manufacturers: list[Manufacturer],
+    body: dict,
+    superuser_client: AsyncClient,
+):
     prepared_manufacturer = prepared_manufacturers[0]
 
-    response = await superuser_client.put(f'{API_PREFIX}/{prepared_manufacturer.id}', json=body)
+    response = await superuser_client.put(
+        f'{API_PREFIX}/{prepared_manufacturer.id}', json=body
+    )
 
     assert response.status_code == 422, response
 
 
-async def test_delete_manufacturer(prepared_manufacturers: list[Manufacturer], superuser_client: AsyncClient):
+async def test_delete_manufacturer(
+    prepared_manufacturers: list[Manufacturer], superuser_client: AsyncClient
+):
     manufacturer = prepared_manufacturers[0]
 
     response = await superuser_client.delete(f'{API_PREFIX}/{manufacturer.id}')

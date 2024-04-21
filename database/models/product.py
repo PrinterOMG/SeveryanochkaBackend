@@ -20,8 +20,12 @@ class Product(Base):
     description: Mapped[str] = mapped_column()
 
     price: Mapped[float] = mapped_column(sa.DECIMAL, CheckConstraint('price > 0'))
-    original_price: Mapped[float] = mapped_column(sa.DECIMAL, CheckConstraint('original_price > 0'))
-    discount: Mapped[float] = mapped_column(sa.DECIMAL, CheckConstraint('discount >= 0'))
+    original_price: Mapped[float] = mapped_column(
+        sa.DECIMAL, CheckConstraint('original_price > 0')
+    )
+    discount: Mapped[float] = mapped_column(
+        sa.DECIMAL, CheckConstraint('discount >= 0')
+    )
 
     stock: Mapped[float] = mapped_column(sa.DECIMAL, CheckConstraint('stock >= 0'))
     is_active: Mapped[bool] = mapped_column()

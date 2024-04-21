@@ -2,15 +2,16 @@ from abc import ABC, abstractmethod
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.base import get_async_session_factory, get_async_session
+from database.base import get_async_session
 
 
 class UnitOfWorkBase(ABC):
     """
     Unit of work.
     """
+
     @abstractmethod
     async def commit(self):
         """
@@ -47,5 +48,7 @@ class SAUnitOfWork(UnitOfWorkBase):
         await self._session.flush()
 
 
-def get_uow(session: Annotated[AsyncSession, Depends(get_async_session)]) -> UnitOfWorkBase:
+def get_uow(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> UnitOfWorkBase:
     return SAUnitOfWork(session)

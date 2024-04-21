@@ -22,7 +22,9 @@ pytest_plugins = ['tests.docker_services']
 DATABASE_URL_TEST = 'postgresql+asyncpg://test:secret-password@localhost:5432/test'
 
 engine_test = create_async_engine(DATABASE_URL_TEST, poolclass=NullPool)
-async_session_maker = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
+async_session_maker = async_sessionmaker(
+    engine_test, class_=AsyncSession, expire_on_commit=False
+)
 Base.metadata.bind = engine_test
 
 
@@ -38,11 +40,15 @@ async def prepare_database(postgres_service):
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-        russian = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=['ru'])
+        russian = gettext.translation(
+            'iso3166-1', pycountry.LOCALES_DIR, languages=['ru']
+        )
 
         countries = list()
         for country in pycountry.countries:
-            countries.append({'name': russian.gettext(country.name), 'code': country.alpha_2})
+            countries.append(
+                {'name': russian.gettext(country.name), 'code': country.alpha_2}
+            )
 
         stmt = insert(Country).values(countries)
         await conn.execute(stmt)
@@ -80,9 +86,7 @@ def get_auth_headers(user: User, expires_minutes: int = 60) -> dict:
         data={'sub': str(user.id)}, expires_delta=timedelta(minutes=expires_minutes)
     )
 
-    headers = {
-        'Authorization': f'Bearer {access_token}'
-    }
+    headers = {'Authorization': f'Bearer {access_token}'}
 
     return headers
 
@@ -104,6 +108,10 @@ async def superuser_headers(prepared_superuser: User) -> dict:
 
 
 @pytest.fixture(scope='function')
-async def superuser_client(superuser_headers: dict) -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(app=app, base_url='http://test', headers=superuser_headers) as ac:
+async def superuser_client(
+    superuser_headers: dict,
+) -> AsyncGenerator[AsyncClient, None]:
+    async with AsyncClient(
+        app=app, base_url='http://test', headers=superuser_headers
+    ) as ac:
         yield ac

@@ -21,5 +21,8 @@ class PhoneKeyEntity(BaseEntity):
         """
         The key is ready to use if it is verified, not used and not expired
         """
-        return self.is_verified and (not self.is_used) and self.expires_at > datetime.utcnow()
-    
+        return (
+            self.is_verified
+            and (not self.is_used)
+            and self.expires_at > datetime.utcnow()
+        )

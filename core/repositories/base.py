@@ -2,13 +2,16 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Type
 from uuid import UUID
 
-from asyncpg import ForeignKeyViolationError
 from pydantic import BaseModel
 from sqlalchemy import select, and_, Select, update, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.exceptions.base import BadRelatedEntityError, CoreError, EntityNotFoundError, EntityAlreadyExistsError
+from core.exceptions.base import (
+    BadRelatedEntityError,
+    EntityNotFoundError,
+    EntityAlreadyExistsError,
+)
 from database.base import Base
 
 T = TypeVar('T', bound=BaseModel)
@@ -85,10 +88,10 @@ class GenericSARepository(GenericRepository[T], ABC):
 
     async def _convert_db_to_entity(self, record: Base, **kwargs) -> T:
         return self.entity.model_validate(record)
-    
+
     async def _convert_entity_to_db(self, entity: T, **kwargs) -> Base:
         return self.model_cls(**entity.model_dump())
-    
+
     async def _convert_entity_to_update_dict(self, entity: T, **kwargs) -> dict:
         return entity.model_dump(exclude={'id'})
 
@@ -137,14 +140,19 @@ class GenericSARepository(GenericRepository[T], ABC):
 
         return await self._convert_db_to_entity(result, **kwargs)
 
-    async def list(self, offset=0, limit=100, filters: dict = None, **kwargs) -> list[T]:
+    async def list(
+        self, offset=0, limit=100, filters: dict = None, **kwargs
+    ) -> list[T]:
         if filters is None:
             filters = {}
-            
+
         stmt = self._construct_list_stmt(offset=offset, limit=limit, **filters)
         records = await self._session.scalars(stmt)
 
-        return [await self._convert_db_to_entity(record, **kwargs) for record in records.all()]
+        return [
+            await self._convert_db_to_entity(record, **kwargs)
+            for record in records.all()
+        ]
 
     async def add(self, entity: T, **kwargs) -> T:
         record = await self._convert_entity_to_db(entity)
@@ -155,12 +163,11 @@ class GenericSARepository(GenericRepository[T], ABC):
             await self._session.flush()
         except IntegrityError as error:
             if 'ForeignKeyViolationError' in str(error):
-                raise BadRelatedEntityError(message=error) from error
+                raise BadRelatedEntityError from error
             if 'UniqueViolationError' in str(error):
                 raise EntityAlreadyExistsError(entity=self.entity) from error
-            
+
             raise error
-            
 
         await self._session.refresh(record)
 
@@ -178,18 +185,15 @@ class GenericSARepository(GenericRepository[T], ABC):
             record = await self._session.scalar(stmt)
         except IntegrityError as error:
             if 'ForeignKeyViolationError' in str(error):
-                raise BadRelatedEntityError(message=error) from error
+                raise BadRelatedEntityError from error
             raise error
-            
+
         if record is None:
             raise EntityNotFoundError(entity=self.entity, find_query=entity.id)
 
         return await self._convert_db_to_entity(record, **kwargs)
 
     async def delete(self, id: UUID) -> None:
-        stmt = (
-            delete(self.model_cls)
-            .where(self.model_cls.id == id)
-        )
+        stmt = delete(self.model_cls).where(self.model_cls.id == id)
 
         await self._session.execute(stmt)

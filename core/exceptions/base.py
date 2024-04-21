@@ -1,5 +1,4 @@
 from typing import Type
-from uuid import UUID
 
 from core.entities.base import BaseEntity
 
@@ -10,19 +9,21 @@ class CoreError(Exception):
 
     def __str__(self) -> str:
         return (
-            str(self.__class__.__name__) + f": {self.message}" if self.message else ""
+            str(self.__class__.__name__) + f': {self.message}' if self.message else ''
         )
 
 
 class EntityNotFoundError(CoreError):
-    def __init__(self, entity: Type[BaseEntity], find_query, message: str | None = None):
+    def __init__(
+        self, entity: Type[BaseEntity], find_query, message: str | None = None
+    ):
         self.entity = entity
         self.find_query = find_query
         super().__init__(message)
 
     def __str__(self) -> str:
         return f'{self.entity.__name__} not found'
-    
+
 
 class BadRelatedEntityError(CoreError):
     pass

@@ -20,17 +20,25 @@ def get_user_repository(session: Annotated[AsyncSession, Depends(get_async_sessi
     return SAUserRepository(session)
 
 
-def get_phone_key_repository(session: Annotated[AsyncSession, Depends(get_async_session)]):
+def get_phone_key_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
     return SAPhoneKeyRepository(session)
 
 
-def get_country_repository(session: Annotated[AsyncSession, Depends(get_async_session)]):
+def get_country_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
     return SACountryRepository(session)
 
 
-def get_manufacturer_repository(session: Annotated[AsyncSession, Depends(get_async_session)]):
+def get_manufacturer_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
     return SAManufacturerRepository(session)
 
 
-def get_category_repository(session: Annotated[AsyncSession, Depends(get_async_session)]):
+def get_category_repository(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+):
     return SACategoryRepository(session)

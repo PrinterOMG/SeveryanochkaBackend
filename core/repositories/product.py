@@ -13,4 +13,3 @@ class ProductRepositoryBase(GenericRepository[ProductEntity], ABC):
 class ProductSARepository(GenericSARepository[ProductEntity], ProductRepositoryBase):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, ProductEntity)
-

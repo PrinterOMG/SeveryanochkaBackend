@@ -14,8 +14,10 @@ router = APIRouter(prefix='/categories', tags=['Categories'])
 
 @router.get('/', response_model=list[CategoryRead])
 async def get_categories(
-        category_service: CategoryServiceDep,
-        depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
+    category_service: CategoryServiceDep,
+    depth: Annotated[
+        int, Query(ge=0, description='Depth of returned subcategories')
+    ] = 1,
 ):
     """
     Return all root categories with their `child`.
@@ -30,9 +32,11 @@ async def get_categories(
 
 @router.get('/{category_id}')
 async def get_category(
-        category_service: CategoryServiceDep,
-        category_id: UUID,
-        depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
+    category_service: CategoryServiceDep,
+    category_id: UUID,
+    depth: Annotated[
+        int, Query(ge=0, description='Depth of returned subcategories')
+    ] = 1,
 ) -> CategoryRead:
     """
     Return category with provided `id` with its `child`.
@@ -46,7 +50,7 @@ async def get_category(
     if category is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Category with id {category_id} does not exist'
+            detail=f'Category with id {category_id} does not exist',
         )
 
     return category
@@ -57,14 +61,11 @@ async def get_category(
     dependencies=[Depends(current_user_id_admin)],
     response_model=CategoryRead,
     status_code=201,
-    responses={
-        400: {
-            'model': ErrorMessage,
-            'description': 'Bad parent_id'
-        }
-    }
+    responses={400: {'model': ErrorMessage, 'description': 'Bad parent_id'}},
 )
-async def create_category(category_service: CategoryServiceDep, new_category: CategoryCreate):
+async def create_category(
+    category_service: CategoryServiceDep, new_category: CategoryCreate
+):
     """
     Create a new category. Categories can have the same names
 
@@ -75,12 +76,12 @@ async def create_category(category_service: CategoryServiceDep, new_category: Ca
     except BadRelatedEntityError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'Category with id {new_category.parent_id} not found'
+            detail=f'Category with id {new_category.parent_id} not found',
         ) from error
     except CategoryCantBeItsOwnParent as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Category cannot be its own parent'
+            detail='Category cannot be its own parent',
         ) from error
 
 
@@ -91,15 +92,16 @@ async def create_category(category_service: CategoryServiceDep, new_category: Ca
     responses={
         404: {
             'model': ErrorMessage,
-            'description': 'Category with provided id does not exist'
+            'description': 'Category with provided id does not exist',
         },
-        400: {
-            'model': ErrorMessage,
-            'description': 'Bad parent_id'
-        }
-    }
+        400: {'model': ErrorMessage, 'description': 'Bad parent_id'},
+    },
 )
-async def update_category(category_service: CategoryServiceDep, category_id: UUID, category_update: CategoryUpdate):
+async def update_category(
+    category_service: CategoryServiceDep,
+    category_id: UUID,
+    category_update: CategoryUpdate,
+):
     """
     Update a category with provided `category_id`
 
@@ -111,17 +113,17 @@ async def update_category(category_service: CategoryServiceDep, category_id: UUI
     except EntityNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'Category with id {error.find_query} does not exist'
+            detail=f'Category with id {error.find_query} does not exist',
         ) from error
     except BadRelatedEntityError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'Category with id {category_update.parent_id} does not exist'
+            detail=f'Category with id {category_update.parent_id} does not exist',
         ) from error
     except CategoryCantBeItsOwnParent as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Category cannot be its own parent'
+            detail='Category cannot be its own parent',
         ) from error
 
 
@@ -132,11 +134,13 @@ async def update_category(category_service: CategoryServiceDep, category_id: UUI
     responses={
         404: {
             'model': ErrorMessage,
-            'description': 'Category with provided id does not exists'
+            'description': 'Category with provided id does not exists',
         }
-    }
+    },
 )
-async def delete_category(category_service: CategoryServiceDep, category_id: UUID) -> None:
+async def delete_category(
+    category_service: CategoryServiceDep, category_id: UUID
+) -> None:
     """
     Delete category with provided `category_id`
 
