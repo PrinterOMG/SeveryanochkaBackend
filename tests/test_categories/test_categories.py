@@ -231,6 +231,17 @@ async def test_update_bad_category(superuser_client: AsyncClient):
     assert response.status_code == 404, response.status_code
 
 
+async def test_update_circular_parent(prepared_category, superuser_client: AsyncClient):
+    body = {
+        'name': 'test_category edited',
+        'parent_id': str(prepared_category.id)
+    }
+
+    response = await superuser_client.put(f'{API_PREFIX}/{prepared_category.id}', json=body)
+
+    assert response.status_code == 400
+
+
 async def test_delete_category(prepared_category: Category, superuser_client: AsyncClient):
     response = await superuser_client.delete(f'{API_PREFIX}/{prepared_category.id}')
 

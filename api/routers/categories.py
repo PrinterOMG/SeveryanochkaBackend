@@ -7,7 +7,7 @@ from api.dependencies import current_user_id_admin, CategoryServiceDep
 from api.schemas.category import CategoryRead, CategoryCreate, CategoryUpdate
 from api.schemas.other import ErrorMessage
 from core.exceptions.base import BadRelatedEntityError, EntityNotFoundError
-
+from core.exceptions.category import CategoryCantBeItsOwnParent
 
 router = APIRouter(prefix='/categories', tags=['Categories'])
 
@@ -76,7 +76,12 @@ async def create_category(category_service: CategoryServiceDep, new_category: Ca
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f'Category with id {new_category.parent_id} not found'
-        )
+        ) from error
+    except CategoryCantBeItsOwnParent as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Category cannot be its own parent'
+        ) from error
 
 
 @router.put(
@@ -112,6 +117,11 @@ async def update_category(category_service: CategoryServiceDep, category_id: UUI
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f'Category with id {category_update.parent_id} does not exist'
+        ) from error
+    except CategoryCantBeItsOwnParent as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Category cannot be its own parent'
         ) from error
 
 
