@@ -2,12 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Type
 from uuid import UUID
 
+from asyncpg import ForeignKeyViolationError
 from pydantic import BaseModel
 from sqlalchemy import select, and_, Select, update, delete
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.exceptions.base import EntityNotFoundError, EntityAlreadyExistsError
+from core.exceptions.base import BadRelatedEntityError, CoreError, EntityNotFoundError, EntityAlreadyExistsError
 from database.base import Base
 
 T = TypeVar('T', bound=BaseModel)
@@ -82,8 +83,14 @@ class GenericSARepository(GenericRepository[T], ABC):
         """
         self._session = session
 
-    async def _convert_to_entity(self, record: Base, **kwargs) -> T:
+    async def _convert_db_to_entity(self, record: Base, **kwargs) -> T:
         return self.entity.model_validate(record)
+    
+    async def _convert_entity_to_db(self, entity: T, **kwargs) -> Base:
+        return self.model_cls(**entity.model_dump())
+    
+    async def _convert_entity_to_update_dict(self, entity: T, **kwargs) -> dict:
+        return entity.model_dump(exclude={'id'})
 
     def _construct_get_stmt(self, id: UUID) -> Select:
         """
@@ -121,48 +128,63 @@ class GenericSARepository(GenericRepository[T], ABC):
 
         return stmt
 
-    async def get_by_id(self, id: UUID) -> T | None:
+    async def get_by_id(self, id: UUID, **kwargs) -> T | None:
         stmt = self._construct_get_stmt(id)
         result = await self._session.scalar(stmt)
 
         if result is None:
             return None
 
-        return await self._convert_to_entity(result)
+        return await self._convert_db_to_entity(result, **kwargs)
 
-    async def list(self, offset=0, limit=100, **filters) -> list[T]:
+    async def list(self, offset=0, limit=100, filters: dict = None, **kwargs) -> list[T]:
+        if filters is None:
+            filters = {}
+            
         stmt = self._construct_list_stmt(offset=offset, limit=limit, **filters)
         records = await self._session.scalars(stmt)
 
-        return [await self._convert_to_entity(record) for record in records.all()]
+        return [await self._convert_db_to_entity(record, **kwargs) for record in records.all()]
 
-    async def add(self, entity: T) -> T:
-        record = self.model_cls(**entity.model_dump())
+    async def add(self, entity: T, **kwargs) -> T:
+        record = await self._convert_entity_to_db(entity)
 
         self._session.add(record)
 
         try:
             await self._session.flush()
         except IntegrityError as error:
-            raise EntityAlreadyExistsError(entity=self.entity) from error
+            if 'ForeignKeyViolationError' in str(error):
+                raise BadRelatedEntityError(message=error) from error
+            if 'UniqueViolationError' in str(error):
+                raise EntityAlreadyExistsError(entity=self.entity) from error
+            
+            raise error
+            
 
         await self._session.refresh(record)
 
-        return await self._convert_to_entity(record)
+        return await self._convert_db_to_entity(record, **kwargs)
 
     async def update(self, entity: T, **kwargs) -> T:
         stmt = (
             update(self.model_cls)
             .where(self.model_cls.id == entity.id)
-            .values(**entity.model_dump(exclude={'id'}))
+            .values(**await self._convert_entity_to_update_dict(entity, **kwargs))
             .returning(self.model_cls)
         )
 
-        record = await self._session.scalar(stmt)
+        try:
+            record = await self._session.scalar(stmt)
+        except IntegrityError as error:
+            if 'ForeignKeyViolationError' in str(error):
+                raise BadRelatedEntityError(message=error) from error
+            raise error
+            
         if record is None:
             raise EntityNotFoundError(entity=self.entity, find_query=entity.id)
 
-        return await self._convert_to_entity(record)
+        return await self._convert_db_to_entity(record, **kwargs)
 
     async def delete(self, id: UUID) -> None:
         stmt = (

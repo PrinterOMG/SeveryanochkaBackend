@@ -22,6 +22,10 @@ class EntityNotFoundError(CoreError):
 
     def __str__(self) -> str:
         return f'{self.entity.__name__} not found'
+    
+
+class BadRelatedEntityError(CoreError):
+    pass
 
 
 class EntityAlreadyExistsError(CoreError):

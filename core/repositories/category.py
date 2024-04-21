@@ -36,8 +36,14 @@ class SACategoryRepository(GenericSARepository, CategoryRepositoryBase):
             child=sub_categories
         )
 
-    async def _convert_to_entity(self, record: Category, **kwargs) -> T:
+    async def _convert_db_to_entity(self, record: Category, **kwargs) -> T:
         return await self._convert_to_entity_with_depth(record, **kwargs)
+    
+    async def _convert_entity_to_update_dict(self, entity: CategoryEntity, **kwargs) -> dict:
+        return entity.model_dump(exclude={'id', 'child'})
+    
+    async def _convert_entity_to_db(self, entity: CategoryEntity, **kwargs) -> Base:
+        return self.model_cls(**entity.model_dump(exclude={'child'}))
 
     async def get_root_categories(self, depth: int) -> list[CategoryEntity]:
         stmt = select(Category).where(Category.parent_id == None)
@@ -45,20 +51,4 @@ class SACategoryRepository(GenericSARepository, CategoryRepositoryBase):
 
         categories = records.all()
 
-        return [await self._convert_to_entity(category, depth=depth) for category in categories]
-
-    async def update(self, entity: CategoryEntity, **kwargs) -> CategoryEntity:
-        stmt = (
-            update(Category)
-            .where(Category.id == entity.id)
-            .values(**entity.model_dump(exclude={'id'}))
-            .returning(Category)
-        )
-
-        record = await self._session.scalar(stmt)
-        if record is None:
-            raise EntityNotFoundError(entity=CategoryEntity, find_query=entity.id)
-
-        category_entity = await self._convert_to_entity(record, depth=kwargs.get('max_depth', 3))
-
-        return category_entity
+        return [await self._convert_db_to_entity(category, depth=depth) for category in categories]

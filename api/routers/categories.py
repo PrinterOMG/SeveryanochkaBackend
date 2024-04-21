@@ -6,17 +6,17 @@ from fastapi import APIRouter, Query, Depends, HTTPException, status
 from api.dependencies import current_user_id_admin, CategoryServiceDep
 from api.schemas.category import CategoryRead, CategoryCreate, CategoryUpdate
 from api.schemas.other import ErrorMessage
-from core.exceptions.base import EntityNotFoundError
+from core.exceptions.base import BadRelatedEntityError, EntityNotFoundError
 
 
 router = APIRouter(prefix='/categories', tags=['Categories'])
 
 
-@router.get('/')
+@router.get('/', response_model=list[CategoryRead])
 async def get_categories(
         category_service: CategoryServiceDep,
         depth: Annotated[int, Query(ge=0, description='Depth of returned subcategories')] = 1
-) -> list[CategoryRead]:
+):
     """
     Return all root categories with their `child`.
 
@@ -70,7 +70,13 @@ async def create_category(category_service: CategoryServiceDep, new_category: Ca
 
     * Requires superuser privileges
     """
-    return await category_service.create(new_category)
+    try:
+        return await category_service.create(new_category)
+    except BadRelatedEntityError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Category with id {new_category.parent_id} not found'
+        )
 
 
 @router.put(
@@ -101,6 +107,11 @@ async def update_category(category_service: CategoryServiceDep, category_id: UUI
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'Category with id {error.find_query} does not exist'
+        ) from error
+    except BadRelatedEntityError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Category with id {category_update.parent_id} does not exist'
         ) from error
 
 

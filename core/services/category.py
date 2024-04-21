@@ -39,7 +39,7 @@ class CategoryServiceBase(ABC):
 
 class CategoryService(CategoryServiceBase):
     async def get_by_id(self, category_id: UUID, depth: int) -> CategoryEntity:
-        return await self.category_repository.get_by_id(category_id)
+        return await self.category_repository.get_by_id(category_id, depth=depth)
 
     async def get_root_categories(self, depth: int) -> list[CategoryEntity]:
         return await self.category_repository.get_root_categories(depth)
@@ -47,7 +47,7 @@ class CategoryService(CategoryServiceBase):
     async def update(self, category_id: UUID, data: CategoryUpdate) -> CategoryEntity:
         category = await self.category_repository.update(
             CategoryEntity(id=category_id, **data.model_dump()),
-            max_depth=0
+            depth=0
         )
         await self.uow.commit()
         return category
@@ -57,7 +57,7 @@ class CategoryService(CategoryServiceBase):
         await self.uow.commit()
 
     async def create(self, data: CategoryCreate) -> CategoryEntity:
-        category = CategoryEntity(**data.model_dump(), child=[])
+        category = CategoryEntity(**data.model_dump())
         category = await self.category_repository.add(category)
         await self.uow.commit()
         return category
