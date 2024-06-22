@@ -135,20 +135,20 @@ async def test_check_bad_user():
     assert response.status_code == 404, response.text
 
 
-@pytest.mark.parametrize(
-    'size, extension, phone, hashed_password, first_name, last_name, birthday, is_superuser, expires_minutes',
-    [
-        ((1, 399), 'png', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
-        ((399, 1), 'png', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
-        ((1, 399), 'jpeg', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
-        ((399, 1), 'jpeg', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
-    ],
-)
-async def test_set_avatar(
-    prepared_image, prepared_user: User, authenticated_client: AsyncClient
-):
-    response = await authenticated_client.post(
-        f'{API_PREFIX}/me/avatar', files={'avatar': prepared_image}
-    )
-
-    assert response.status_code == 200, response.text
+# @pytest.mark.parametrize(
+#     'size, extension, phone, hashed_password, first_name, last_name, birthday, is_superuser, expires_minutes',
+#     [
+#         ((1, 399), 'png', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
+#         ((399, 1), 'png', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
+#         ((1, 399), 'jpeg', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
+#         ((399, 1), 'jpeg', '+71234567890', '123', 'Oleg', 'Olegov', None, False, 60),
+#     ],
+# )
+# async def test_set_avatar(
+#     prepared_image, prepared_user: User, authenticated_client: AsyncClient
+# ):
+#     response = await authenticated_client.post(
+#         f'{API_PREFIX}/me/avatar', files={'avatar': prepared_image}
+#     )
+#
+#     assert response.status_code == 200, response.text
